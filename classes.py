@@ -51,8 +51,8 @@ class FileWriter(Write):
     def write(self, data:dict[str:str]) -> bool:
         try:
             with open(self.path,"a") as file:
-                converrt_data = json.dumps(data)
-                file.write(converrt_data)
+                convert_data = json.dumps(data)
+                file.write(convert_data)
                 return True
         except IOError:
             return False
@@ -64,10 +64,12 @@ class Encryptor:
 
     def encrypt(self,data:str) -> str:
         ciphertext = ""
+        length_key = len(self.key)
         for i in range(len(data)):
-            index = i % len(self.key)
-            ciphertext += chr(ord(data[i]) ^ ord(self.key[index]))
+            ciphertext += chr(ord(data[i]) ^ ord(self.key[i % length_key]))
         return ciphertext
+
+
 
 
 
