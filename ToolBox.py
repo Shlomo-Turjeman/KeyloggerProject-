@@ -55,15 +55,12 @@ def format_language(one_key,old_l,new_l):
 
 
 def format_key(key):
-    global foreign_inputs
+
     key1 = str(key).replace("'", "")
     if key1 == 'Key.space':
         return ' '
     elif key1 == 'Key.enter':
         return '\n'
-    elif key1.startswith('Key') or key1.startswith('\\'):
-        foreign_inputs.append(key1)
-        return ''
     else:
         key_l = get_key_language(key1)
         keyboard_l = get_keyboard_language()

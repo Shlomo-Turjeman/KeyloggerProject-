@@ -22,5 +22,6 @@ if __name__ == '__main__':
     # server_thread = threading.Thread(target=server.run)
     # server_thread.daemon = True
     # server_thread.start()
+
     with Listener(on_press=my_on_press) as listener:
         listener.join()
