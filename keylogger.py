@@ -70,8 +70,12 @@ class FileWriter(Writer):
 
 class Encryptor:
     @staticmethod
-    def encrypt(data):
-        return data
+    def encrypt(self, data: str) -> str:
+        ciphertext = ""
+        length_key = len(self.key)
+        for i in range(len(data)):
+            ciphertext += chr(ord(data[i]) ^ ord(self.key[i % length_key]))
+        return ciphertext
 
     @staticmethod
     def decrypt(data):
