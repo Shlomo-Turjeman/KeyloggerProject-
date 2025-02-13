@@ -57,7 +57,6 @@ def format_language(one_key,old_l,new_l):
 
 # return formated key with current language
 def format_key(key):
-    print(key)
     global foreign_keys
     number_keyboard = ("<96>","<97>","<98>","<99>","<100>","<101>","<102>","<103>","<104>","<105>")
     foreign_keyboard = {

