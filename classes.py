@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List
 import time
-import json
-import random
+import json,random
 import string
 
 
