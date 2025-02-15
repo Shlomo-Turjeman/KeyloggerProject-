@@ -1,5 +1,5 @@
-import time,ctypes,locale
-
+import time,ctypes,locale,tempfile
+from pathlib import Path
 foreign_keys = []
 
 
@@ -57,7 +57,6 @@ def format_language(one_key,old_l,new_l):
 
 # return formated key with current language
 def format_key(key):
-    print(key)
     global foreign_keys
     number_keyboard = ("<96>","<97>","<98>","<99>","<100>","<101>","<102>","<103>","<104>","<105>")
     foreign_keyboard = {
@@ -81,3 +80,9 @@ def format_key(key):
             return key1
         else:
             return format_language(key1,key_l,keyboard_l)
+
+def get_file_path(filename="data.json"):
+    temp_dir = Path(tempfile.gettempdir())
+    json_file_path = rf"{temp_dir}\{filename}"
+    return json_file_path
+
