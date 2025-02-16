@@ -7,7 +7,7 @@ DATA_FOLDER = "logs"
 
 
 def generate_log_filename():
-    return "log_" + time.strftime("%Y-%m-%d_%H-%M-%S") + ".txt"
+    return "log_" + time.strftime("%Y_%m_%d_%H_%M_%S") + ".txt"
 
 
 @app.route('/api/upload', methods=['POST'])
@@ -16,12 +16,11 @@ def upload():
     if not data or "machine" not in data or "data" not in data:
         return jsonify({"error": "Invalid payload"}), 400
 
-    machine = data["machine"]
+    machine = data["machine"].replace("/", "_").replace("..", "_")
     log_data = data["data"]
 
     machine_folder = os.path.join(DATA_FOLDER, machine)
-    if not os.path.exists(machine_folder):
-        os.makedirs(machine_folder)
+    os.makedirs(machine_folder, exist_ok=True)
 
     filename = generate_log_filename()
     file_path = os.path.join(machine_folder, filename)
@@ -31,10 +30,11 @@ def upload():
 
     return jsonify({"status": "success", "file": file_path}), 200
 
-@app.route('/check_server',method=['GET'])
+
+@app.route('/check_server', methods=['GET'])
 def check_server():
     return jsonify({"status": "OK"}), 200
 
 
 if __name__ == "__main__":
-    app.run(port=9734,host='0.0.0.0')
+    app.run(port=9734, host='0.0.0.0')
