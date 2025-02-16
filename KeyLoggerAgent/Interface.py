@@ -13,9 +13,6 @@ class IKeyLoggerManager(ABC):
     @abstractmethod
     def stop_logging(self) -> None:
         pass
-    @abstractmethod
-    def get_logged_keys(self) -> dict[str:str]:
-        pass
 
 class Write(ABC):
     @abstractmethod

