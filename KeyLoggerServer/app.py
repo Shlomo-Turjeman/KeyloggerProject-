@@ -30,6 +30,17 @@ def upload():
 
     return jsonify({"status": "success", "file": file_path}), 200
 
+@app.route('/api/create_machine', methods=['POST'])
+def create_machine():
+    data = request.get_json()
+    if not data or "ip" not in data:
+        return jsonify({"error": "Invalid payload"}), 400
+
+    ip = data["ip"]
+    response = jsonify({"serial_number":123})
+    return response, 200
+
+
 
 @app.route('/check_server', methods=['GET'])
 def check_server():

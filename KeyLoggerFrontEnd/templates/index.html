@@ -1,10 +1,48 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Key logger Dashboard</title>
+    <link rel="stylesheet" href="index.css">
+    
 </head>
 <body>
+    <header>
+        <h1>Key logger Dashboard</h1>
+        <button onclick="fetchLogs()">refresh data</button>
+        
+    </header>
 
+    <main>
+        <aside>
+            <h2>menu</h2>
+            <ul>
+                <li><a href="#">Reports</a></li>
+                <li><a href="#">Activity analysis</a></li>
+                <li><a href="#">settings</a></li>
+            </ul>
+        </aside>
+        
+        
+        
+
+        <section class="content">
+            <h2>data analysis</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>time</th>
+                        <th>window</th>
+                        <th>text</th>
+                    </tr>
+                </thead>
+                <tbody id="Table">
+                    <!-- <tr><td colspan="4" class="text-center">.</td></tr> -->
+                </tbody>
+            </table>
+        </section>
+    </main>
+    <script src="index.js"></script>
 </body>
 </html>
