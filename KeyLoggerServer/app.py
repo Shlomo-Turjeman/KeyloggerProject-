@@ -35,6 +35,13 @@ def upload():
 def check_server():
     return jsonify({"status": "OK"}), 200
 
+@app.route('/api/get_demo',methods = ['GET'])
+def get_demo():
+    data = [
+        {"time": "1233", "window": "a", "text": "fvfvf"}
+    ]
+    return jsonify(data), 200
+
 
 if __name__ == "__main__":
     app.run(port=9734, host='0.0.0.0')
