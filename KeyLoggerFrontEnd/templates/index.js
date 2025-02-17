@@ -1,6 +1,14 @@
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
+async function get_logs(){
+    
+    let response = await fetch("https://keylogger.shuvax.com/api/get_demo");
+    let data = await response.json();
+    return data
+
+   
+}
 async function fetchLogs() {
     const t = document.getElementById("Table");
     t.innerHTML = "<tr><td colspan='3' class='text-center'>loading data...</td></tr>";
@@ -8,12 +16,13 @@ async function fetchLogs() {
     
 
     
-    const data = [
-        {time: "1233", window: "a", text: "fvfvf"},
-        {time:"4569",window:"b",text:"gbjfnds"},{time: "1233", window: "a", text: "fvfvf"},
-        {time:"4569",window:"b",text:"gbjfnds"},{time: "1233", window: "a", text: "fvfvf"},
-        {time:"4569",window:"b",text:"gbjfnds"}
-    ]
+    // const data = [
+    //     {time: "1233", window: "a", text: "fvfvf"},
+    //     {time:"4569",window:"b",text:"gbjfnds"},{time: "1233", window: "a", text: "fvfvf"},
+    //     {time:"4569",window:"b",text:"gbjfnds"},{time: "1233", window: "a", text: "fvfvf"},
+    //     {time:"4569",window:"b",text:"gbjfnds"}
+    // ]
+    const data = get_logs();
     function add_rows(data_a){
         const t = document.getElementById("Table");
         t.innerHTML = ""
