@@ -1,0 +1,17 @@
+old_files/
+.idea/
+*.iml
+*.iws
+*.ipr
+
+
+__pycache__/
+*.py[cod]
+*.swp
+.DS_Store
+.vscode/
+
+# virtualenv
+venv/
+ENV/
+env/
