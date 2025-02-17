@@ -2,3 +2,4 @@ pynput
 requests
 pygetwindow
 flask
+flask-cors
