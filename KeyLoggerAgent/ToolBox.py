@@ -1,8 +1,7 @@
-import time,ctypes,locale,tempfile
+import time, ctypes, locale, tempfile
 from pathlib import Path
+
 foreign_keys = []
-
-
 
 
 # returns the keyboard language of the current thread
@@ -25,6 +24,7 @@ def get_keyboard_language():
     except Exception:
         return "en-US"
 
+
 # returns the language of the key
 def get_key_language(one_key):
     try:
@@ -35,10 +35,15 @@ def get_key_language(one_key):
     except Exception as e:
         return f"Error: {e}"
 
+
 # replace the key language with the second language, only between English and Hebrew
-def format_language(one_key,old_l,new_l):
-    en_keyboard = ("q","w","e","r","t","y","u","i","o","p","a","s","d","f","g","h","j","k","l",";","'","z","x","c","v","b","n","m",",",".","/")
-    he_keyboard = ("/","'","ק","ר","א","ט","ו","ן","ם","פ","ש","ד","ג","כ","ע","י","ח","ל","ך","ף",",","ז","ס","ב","ה","נ","מ","צ","ת","ץ",".")
+def format_language(one_key, old_l, new_l):
+    en_keyboard = (
+    "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "a", "s", "d", "f", "g", "h", "j", "k", "l", ";", "'", "z", "x",
+    "c", "v", "b", "n", "m", ",", ".", "/")
+    he_keyboard = (
+    "/", "'", "ק", "ר", "א", "ט", "ו", "ן", "ם", "פ", "ש", "ד", "ג", "כ", "ע", "י", "ח", "ל", "ך", "ף", ",", "ז", "ס",
+    "ב", "ה", "נ", "מ", "צ", "ת", "ץ", ".")
     try:
         if old_l == 'en_US':
             index = en_keyboard.index(one_key)
@@ -54,15 +59,15 @@ def format_language(one_key,old_l,new_l):
         return he_keyboard[index]
 
 
-
 # return formated key with current language
 def format_key(key):
+    print(key)
     global foreign_keys
-    number_keyboard = ("<96>","<97>","<98>","<99>","<100>","<101>","<102>","<103>","<104>","<105>")
+    number_keyboard = ("<96>", "<97>", "<98>", "<99>", "<100>", "<101>", "<102>", "<103>", "<104>", "<105>")
     foreign_keyboard = {
-        "<110>":'.',
-        "Key.space":' ',
-        "Key.enter":'\n'
+        "<110>": '.',
+        "Key.space": ' ',
+        "Key.enter": '\n'
     }
 
     key1 = str(key).replace("'", "")
@@ -79,10 +84,10 @@ def format_key(key):
         if key_l == keyboard_l:
             return key1
         else:
-            return format_language(key1,key_l,keyboard_l)
+            return format_language(key1, key_l, keyboard_l)
+
 
 def get_file_path(filename="data.json"):
     temp_dir = Path(tempfile.gettempdir())
     json_file_path = rf"{temp_dir}\{filename}"
     return json_file_path
-
