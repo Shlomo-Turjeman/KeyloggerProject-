@@ -12,6 +12,18 @@ def generate_log_filename():
     return "log_" + time.strftime("%Y_%m_%d_%H_%M_%S") + ".txt"
 
 
+def merge_dicts(*dicts: dict[:str]) -> dict:
+    dict_to_ret = dicts[0]
+    if len(dicts) > 1:
+        for one_dict in dicts[1:]:
+            for key, val in one_dict.items():
+                if key not in dict_to_ret:
+                    dict_to_ret[key] = ""
+                dict_to_ret[key] += val
+
+    return dict_to_ret
+
+
 @app.route('/api/upload', methods=['POST'])
 def upload():
     data = request.get_json()
