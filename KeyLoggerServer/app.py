@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os, random,string
 import time
+import os, json, time
 
 app = Flask(__name__)
 CORS(app)
@@ -26,34 +27,63 @@ def merge_dicts(*dicts: dict[:str]) -> dict:
 
 @app.route('/api/upload', methods=['POST'])
 def upload():
-    data = request.get_json()
-    if not data or "machine" not in data or "data" not in data:
+    machine_data = request.get_json()
+    if not machine_data or "machine" not in machine_data or "data" not in machine_data or not isinstance(
+            machine_data['data'], dict):
         return jsonify({"error": "Invalid payload"}), 400
 
-    machine = data["machine"].replace("/", "_").replace("..", "_")
-    log_data = data["data"]
+    with open('data.json', 'r', encoding='utf-8') as f:
+        local_data = json.load(f)
 
-    machine_folder = os.path.join(DATA_FOLDER, machine)
-    os.makedirs(machine_folder, exist_ok=True)
+    machine_sn = machine_data["machine"].replace("/", "_").replace("..", "_")
+    if machine_sn not in local_data:
+        return jsonify({"error": "machine not exist"}), 400
 
-    filename = generate_log_filename()
-    file_path = os.path.join(machine_folder, filename)
+    log_data = machine_data["data"]
+    machine_path = local_data[machine_sn]['path']
+    os.makedirs(machine_path, exist_ok=True)
+    try:
+        with open(machine_path + '/log.json', 'r', encoding='utf-8') as f:
+            try:
+                machine_exist_data = json.load(f)
+            except json.JSONDecodeError:
+                machine_exist_data = {}
+    except FileNotFoundError:
+        machine_exist_data = {}
+    machine_log = merge_dicts(machine_exist_data, log_data)
 
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.write(log_data)
+    with open(machine_path + '/log.json', "w", encoding="utf-8") as f:
+        json.dump(machine_log, f, ensure_ascii=False, indent=4)
 
-    return jsonify({"status": "success", "file": file_path}), 200
+    return jsonify({"status": "success"}), 200
+
 
 @app.route('/api/create_machine', methods=['POST'])
 def create_machine():
+    data_path = 'data.json'
+
     data = request.get_json()
     if not data or "ip" not in data:
         return jsonify({"error": "Invalid payload"}), 400
 
     ip = data["ip"]
-    response = jsonify({"serial_number":123})
-    return response, 200
 
+    try:
+        with open(data_path, 'r', encoding='utf-8') as file:
+            try:
+                data_dict = json.load(file)
+            except json.JSONDecodeError:
+                data_dict = {}
+    except FileNotFoundError:
+        data_dict = {}
+
+    serial_number = int(max(data_dict.keys(), default=1000)) + 1
+
+    data_dict[serial_number] = {'ip': ip, 'path': f'logs/machine_{serial_number}'}
+    with open(data_path, 'w', encoding='utf-8') as file:
+        json.dump(data_dict, file, ensure_ascii=False, indent=4)
+
+    return jsonify({"serial_number": serial_number}), 200
 
 
 @app.route('/check_server', methods=['GET'])
