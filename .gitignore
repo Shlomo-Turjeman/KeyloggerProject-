@@ -3,6 +3,8 @@ old_files/
 *.iml
 *.iws
 *.ipr
+KeyLoggerServer/logs
+KeyLoggerServer/data.json
 
 
 __pycache__/
