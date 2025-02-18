@@ -19,6 +19,6 @@ def create_logger():
 
 
 if __name__ == "__main__":
-    print(create_logger())
+    create_logger()
     # key_logger = keylogger.KeyLoggerManager(123)
     # key_logger.start_logging()

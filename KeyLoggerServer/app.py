@@ -28,8 +28,7 @@ def merge_dicts(*dicts: dict[:str]) -> dict:
 @app.route('/api/upload', methods=['POST'])
 def upload():
     machine_data = request.get_json()
-    if not machine_data or "machine" not in machine_data or "data" not in machine_data or not isinstance(
-            machine_data['data'], dict):
+    if not machine_data or "machine" not in machine_data or "data" not in machine_data or not isinstance(machine_data['data'], dict):
         return jsonify({"error": "Invalid payload"}), 400
 
     with open('data.json', 'r', encoding='utf-8') as f:
