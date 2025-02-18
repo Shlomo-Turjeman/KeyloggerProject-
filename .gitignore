@@ -5,7 +5,7 @@ old_files/
 *.ipr
 KeyLoggerServer/logs
 KeyLoggerServer/data.json
-
+KeyLoggerAgent/__pycache__
 
 __pycache__/
 *.py[cod]
