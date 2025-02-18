@@ -2,6 +2,8 @@ import manager as keylogger
 import requests
 
 url = 'http://127.0.0.1:9734/api/create_machine'
+
+
 def create_logger():
     data = {
         "ip": "127.0.0.1"
@@ -14,6 +16,7 @@ def create_logger():
         return response.status_code == 200
     except requests.exceptions.RequestException:
         return False
+
 
 if __name__ == "__main__":
     print(create_logger())
