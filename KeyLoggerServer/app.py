@@ -98,11 +98,14 @@ def get_demo():
 @app.route('/api/get_keystrokes', methods=['GET'])
 def get_keystrokes():
     machine_sn = request.args.get('machine_sn')
+
     if not machine_sn:
         return jsonify({"error": "invalid machine serial number"}), 400
+
     try:
         with open('data.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
+
         if machine_sn not in data:
             return jsonify({"error":f"machine {machine_sn} not found"}),400
 
