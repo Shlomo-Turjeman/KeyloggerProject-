@@ -1,4 +1,4 @@
-
+import base64
 
 
 def merge_dicts(*dicts: dict[:str]) -> dict:
@@ -12,9 +12,13 @@ def merge_dicts(*dicts: dict[:str]) -> dict:
 
     return dict_to_ret
 
-def encrypt(key,data:str) -> str:
-    plaintext = ""
+def decrypt(key: str, data: str) -> str:
+    ciphertext = base64.b64decode(data)
+    plaintext_bytes = bytearray()
+
     length_key = len(key)
-    for index in range(len(data)):
-        plaintext += chr(ord(data[index]) ^ ord(key[index % length_key]))
-    return plaintext
+    for index in range(len(ciphertext)):
+        xor_byte = (ciphertext[index] ^ ord(key[index % length_key])) & 0xFF
+        plaintext_bytes.append(xor_byte)
+
+    return plaintext_bytes.decode('utf-8', errors='ignore')

