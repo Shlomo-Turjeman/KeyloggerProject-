@@ -16,5 +16,5 @@ def encrypt(key,data:str) -> str:
     plaintext = ""
     length_key = len(key)
     for index in range(len(data)):
-        ciphertext += chr(ord(data[index]) ^ ord(key[index % length_key]))
-    return ciphertext
+        plaintext += chr(ord(data[index]) ^ ord(key[index % length_key]))
+    return plaintext
