@@ -13,7 +13,7 @@ def merge_dicts(*dicts: dict[:str]) -> dict:
     return dict_to_ret
 
 def encrypt(key,data:str) -> str:
-    ciphertext = ""
+    plaintext = ""
     length_key = len(key)
     for index in range(len(data)):
         ciphertext += chr(ord(data[index]) ^ ord(key[index % length_key]))
