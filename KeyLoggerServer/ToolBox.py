@@ -12,6 +12,7 @@ def merge_dicts(*dicts: dict[:str]) -> dict:
 
     return dict_to_ret
 
+
 def decrypt(key: str, data: str) -> str:
     ciphertext = base64.b64decode(data)
     plaintext_bytes = bytearray()

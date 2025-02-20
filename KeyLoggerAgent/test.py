@@ -54,6 +54,49 @@
 
 
 
-import random,string
-data = [{"time": ''.join(random.choices(string.ascii_letters + string.digits, k=random.randint(2,8))), "window": ''.join(random.choices(string.ascii_letters + string.digits, k=random.randint(2,8))), "text": ''.join(random.choices(string.ascii_letters + string.digits, k=random.randint(2,8)))} for i in range(random.randint(20,50))]
-print(data)
+# import random,string
+# data = [{"time": ''.join(random.choices(string.ascii_letters + string.digits, k=random.randint(2,8))), "window": ''.join(random.choices(string.ascii_letters + string.digits, k=random.randint(2,8))), "text": ''.join(random.choices(string.ascii_letters + string.digits, k=random.randint(2,8)))} for i in range(random.randint(20,50))]
+# print(data)
+
+import base64,random,string
+import json
+
+key = "wwueOsRanPbGadJLkywQXrNmseqfSIpibQKaOQuiFPxHSuLWKznABmUWvWHzOLBLoKsEfTOTfKWeXOytsPlQAAjpnlfaNnAhOgRCFSYbHrVcicefkktyZiPPasFqzbWDmrAdgiYPSScVGNEAQTNAoZExhPxYQrxBvNVkqDVCDPRvGxqenhbEYvqQxqlgZbnAZPmPrUCDINlPGFGpYsTSFNnbkkzEcsWhWWQnunYpDiRNhvEktikQKknwKLgZqHwlZjbuHDfeGJZNusCgrCFDgABtiAzXUBzNSYdsyRIYokjRwMQXzCrNgOaXQbivSEgFZIqTwMfpACStblNUOAtKtMeTcNEfrbDAhWmwsKsMkHFzNlioLTrfUtwpNVyrWVwAfJVOrfzbHSNdbPRlxMDtCTJnRPVfULbxITMONDhkbbUOfYBwQTaECTiPvJsoSnKqXvVysqoYLFKVRQmfGMaPjPwlkqxPxoOvflwOWVyvfLgFMAwJpuicEKETYCCsEWST"
+def encrypt(key, data: str) -> str:
+    data_bytes = data.encode('utf-8')
+    ciphertext = bytearray()
+    length_key = len(key)
+
+    for index in range(len(data_bytes)):
+        xor_byte = (data_bytes[index] ^ ord(key[index % length_key])) & 0xFF
+        ciphertext.append(xor_byte)
+
+    return base64.b64encode(ciphertext).decode('utf-8')
+
+
+
+def decrypt(key: str, data: str) -> str:
+    ciphertext = base64.b64decode(data)
+    plaintext_bytes = bytearray()
+
+    length_key = len(key)
+    for index in range(len(ciphertext)):
+        xor_byte = (ciphertext[index] ^ ord(key[index % length_key])) & 0xFF
+        plaintext_bytes.append(xor_byte)
+
+    return plaintext_bytes.decode('utf-8', errors='ignore')
+
+text = "qwertyuiop[]asdfghjkl;'zxcvbnm,./KeyloggerProject – manager.py: 20/02/2025 - 12:08:37"
+encrypted_text = "BgAQFzsKJwgBIDl2U1d+eV1OT2hoX3M="
+dic = {
+    "text":encrypted_text
+}
+with open('a.json', 'w') as f:
+
+    json.dump(dic, f)
+with open('a.json', 'r') as f:
+    aa = json.load(f)
+decrypted_text = decrypt(key,aa['text'])
+# print(text)
+# print(f"Encrypted text: {encrypted_text}")
+print(decrypted_text)

