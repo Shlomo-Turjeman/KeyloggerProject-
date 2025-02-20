@@ -22,7 +22,7 @@ async function get_logs(){
         return;
     }
 
-    let response = await fetch("http://127.0.0.1:9734/api/get_demo", {
+    let response = await fetch("https://keylogger.shuvax.com/api/get_demo", {
         method: "GET",
         headers: {
             "Authorization": `Bearer ${token}`

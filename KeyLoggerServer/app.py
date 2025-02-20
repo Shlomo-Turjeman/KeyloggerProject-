@@ -36,9 +36,9 @@ def upload():
             try:
                 machine_exist_data = json.load(f)
             except json.JSONDecodeError:
-                machine_exist_data = {}
+                machine_exist_data = []
     except FileNotFoundError:
-        machine_exist_data = {}
+        machine_exist_data = []
     machine_log = merge_dicts(machine_exist_data, log_data)
     key = local_data[machine_sn]["key"]
     # print(machine_data)
