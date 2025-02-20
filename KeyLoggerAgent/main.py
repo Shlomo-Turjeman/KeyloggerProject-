@@ -7,6 +7,7 @@ url = 'http://127.0.0.1:9734/api/create_machine'
 def create_logger():
     hostname = socket.gethostname()
     ipaddress = socket.gethostbyname(hostname)
+    mac_address = hex(uuid.getnode())
     data = {
         "ip": ipaddress
     }
