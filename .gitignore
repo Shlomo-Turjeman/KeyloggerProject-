@@ -6,7 +6,7 @@ old_files/
 KeyLoggerServer/logs
 KeyLoggerServer/data.json
 KeyLoggerAgent/__pycache__
-
+KeyLoggerServer/tests.py
 
 __pycache__/
 *.py[cod]
