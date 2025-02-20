@@ -7,6 +7,7 @@ from ToolBox import merge_dicts,decrypt
 app = Flask(__name__)
 CORS(app,supports_credentials=True)
 app.config['JWT_SECRET_KEY'] = 'q6Nj+unD<gn1*[>J+H!0hO[;rm_Xa'
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = datetime.timedelta(hours=1) 
 jwt = JWTManager(app)
 
 DATA_FOLDER = "logs"
