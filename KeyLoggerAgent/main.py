@@ -9,7 +9,9 @@ def create_logger():
     ipaddress = socket.gethostbyname(hostname)
     mac_address = hex(uuid.getnode())
     data = {
-        "ip": ipaddress
+        "host name": hostname,
+        "ip": ipaddress,
+        "mac address": mac_address
     }
     try:
         response = requests.post(url, json=data)
