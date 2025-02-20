@@ -65,6 +65,7 @@ def format_key(key):
     number_keyboard = ("<96>", "<97>", "<98>", "<99>", "<100>", "<101>", "<102>", "<103>", "<104>", "<105>")
     foreign_keyboard = {
         "<110>": '.',
+        "<191>":'\n',
         "Key.space": ' ',
         "Key.enter": '\n'
     }

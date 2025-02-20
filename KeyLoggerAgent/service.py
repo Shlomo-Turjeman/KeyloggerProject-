@@ -85,4 +85,5 @@ class Encryptor:
         for index in range(len(data_bytes)):
             xor_byte = (data_bytes[index] ^ ord(self.key[index % length_key])) & 0xFF
             ciphertext.append(xor_byte)
+
         return base64.b64encode(ciphertext).decode('utf-8')
