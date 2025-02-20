@@ -1,9 +1,33 @@
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+async function getCookie(name) {
+    const cookies = document.cookie.split('; ').map(cookie => cookie.split('='));
+    for (let [key, value] of cookies) {
+        if (key === name) {
+            return decodeURIComponent(value);
+        }
+    }
+    return null;
 }
 
+
+
+
+
 async function get_logs(){
-    let response = await fetch("https://keylogger.shuvax.com/api/get_demo");
+    const token = await getCookie("access_token"); 
+    console.log(token);
+    
+    
+    if (!token) {
+        window.location.href = "login.html";
+        return;
+    }
+
+    let response = await fetch("https://keylogger.shuvax.com/api/get_demo", {
+        method: "GET",
+        headers: {
+            "Authorization": `Bearer ${token}`
+        }
+    });
     let data = await response.json();
     return data;
 }
@@ -12,10 +36,7 @@ async function fetchLogs() {
     const table = document.getElementById("Table");
     table.innerHTML = "<tr><td colspan='3' class='text-center'>Loading data...</td></tr>";
 
-    // await sleep(300);
-
     const data = await get_logs();
-    console.log("נתונים מה-API:", data);
 
     table.innerHTML = "";
 

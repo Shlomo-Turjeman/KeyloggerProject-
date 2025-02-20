@@ -30,7 +30,6 @@ class KeyLoggerService(IKeyLogger):
         # return {key:value for key, value in self.__logged_keys.items() if key is not self.__last_record}
         return self.__logged_keys
 
-
     def clear_logged_keys(self) -> dict[str:str]:
         # self.__logged_keys = {self.__last_record:self.__logged_keys[self.__last_record]} if self.__last_record in self.__logged_keys else {}
         self.__logged_keys = {}

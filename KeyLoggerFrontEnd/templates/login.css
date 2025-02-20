@@ -1,0 +1,64 @@
+* {
+    box-sizing: border-box;
+}
+/* צבע רקע לדף */
+body {
+    background-color: #eeeeee;
+    font-family: Arial, sans-serif;
+}
+
+/* עיצוב הטופס */
+form {
+    background-color: #0cac2a;
+    color: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* עיצוב תוויות */
+label {
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+/* עיצוב שדות קלט */
+input[type="text"], input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+/* עיצוב לשדה סיסמה */
+
+
+/* עיצוב לכפתור השליחה */
+input[type="submit"] {
+    background-color: #d3d021;
+    color: #a61616;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 15px;
+}
+
+/* שינוי צבע הכפתור כשעוברים עליו */
+input[type="submit"]:hover {
+    background-color: #b8b018;
+}
