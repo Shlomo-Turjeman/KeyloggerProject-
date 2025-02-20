@@ -50,11 +50,13 @@ def create_machine():
     data_path = 'data.json'
 
     data = request.get_json()
-    if not data or "ip" not in data:
+    if not data or "ip" not in data or "host name" not in data or "mac address" not in data:
         return jsonify({"error": "Invalid payload"}), 400
 
     ip = data["ip"]
-    key = "".join(random.choices(string.ascii_letters + string.digits,k=512))
+    mac_address = data["mac address"]
+    host_name = data["host name"]
+    key = "".join(random.choices(string.ascii_letters,k=512))
 
     try:
         with open(data_path, 'r', encoding='utf-8') as file:
@@ -67,7 +69,7 @@ def create_machine():
 
     serial_number = int(max(data_dict.keys(), default=1000)) + 1
 
-    data_dict[serial_number] = {'ip': ip, 'path': f'logs/machine_{serial_number}',"key":key}
+    data_dict[serial_number] = {'mac address': mac_address, 'host name': host_name, 'ip': ip, 'path': f'logs/machine_{serial_number}',"key":key}
     with open(data_path, 'w', encoding='utf-8') as file:
         json.dump(data_dict, file, ensure_ascii=False, indent=4)
 

