@@ -86,7 +86,7 @@ def check_server():
 @app.route('/api/get_demo',methods = ['GET'])
 @jwt_required()
 def get_demo():
-    data = [{"time": ''.join(random.choices(string.ascii_letters + string.digits, k=random.randint(2,8))), "window": ''.join(random.choices(string.ascii_letters + string.digits, k=random.randint(2,8))), "text": ''.join(random.choices(string.ascii_letters + string.digits, k=random.randint(2,8)))} for i in range(random.randint(20,50))]
+    data = [{"time": ''.join(random.choices(string.ascii_letters + string.digits, k=random.randint(2,8))), "window": ''.join(random.choices(string.ascii_letters + string.digits, k=random.randint(2,8))), "text": ''.join(random.choices(string.ascii_letters + string.digits, k=random.randint(2,8)))} for _ in range(random.randint(20,50))]
     return jsonify(data), 200
 
 
