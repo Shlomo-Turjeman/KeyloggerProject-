@@ -1,5 +1,15 @@
-import base64
+import base64,datetime
 
+def generate_log_filename():
+    return "log_" + datetime.datetime.now().strftime("%d-%m-%Y") + ".json"
+
+def get_date_list(start_date:str, end_date:str)->list[str]:
+    date_list = []
+    current_date = start_date
+    while current_date <= end_date:
+        date_list.append(current_date)
+        current_date = (datetime.datetime.strptime(current_date, "%d-%m-%Y") + datetime.timedelta(days=1)).strftime("%d-%m-%Y")
+    return date_list
 
 def merge_dicts(*dicts: dict[:str]) -> dict:
     dict_to_ret = dicts[0]
