@@ -3,3 +3,4 @@ requests
 pygetwindow
 flask
 flask-cors
+flask-jwt-extended

