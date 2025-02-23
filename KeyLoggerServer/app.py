@@ -4,8 +4,6 @@ from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_requir
 import os, random,string,datetime, json
 from ToolBox import merge_dicts,decrypt,generate_log_filename,get_date_list
 
-# template_dir = os.path.abspath("/home/ubuntu/key_logger/KeyloggerProject-/KeyLoggerFrontEnd/templates")
-# static_dir = os.path.abspath("/home/ubuntu/key_logger/KeyloggerProject-/KeyLoggerFrontEnd/static")
 app = Flask(__name__)
 CORS(app,supports_credentials=True)
 app.config['JWT_SECRET_KEY'] = 'q6Nj+unD<gn1*[>J+H!0hO[;rm_Xa'

