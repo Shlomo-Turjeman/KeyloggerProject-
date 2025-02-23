@@ -3,10 +3,12 @@ from flask_cors import CORS
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, JWTManager
 import os, random,string,datetime, json,time
 from ToolBox import merge_dicts,decrypt,generate_log_filename,get_date_list
+from dotenv import load_dotenv
 
 app = Flask(__name__)
 CORS(app,supports_credentials=True)
-app.config['JWT_SECRET_KEY'] = 'q6Nj+unD<gn1*[>J+H!0hO[;rm_Xa'
+load_dotenv()
+app.config['JWT_SECRET_KEY'] = os.getenv("SECRET_KEY")
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = datetime.timedelta(hours=1) 
 jwt = JWTManager(app)
 

