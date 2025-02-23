@@ -164,6 +164,50 @@ def login():
     return jsonify({"msg": "Invalid credentials"}), 401
 
 
+@app.route('/api/shutdown_client', methods=['POST'])
+def shutdown_client():
+
+    machine_sn = request.args.get('machine_sn')
+    if not machine_sn:
+        return jsonify({"error": "invalid machine serial number"}), 400
+
+    try:
+        with open('data.json', 'r', encoding='utf-8') as f:
+            local_data = json.load(f)
+
+        if machine_sn not in local_data:
+            return jsonify({"error": "machine not found"}), 404
+
+        local_data[machine_sn]['shutdown_requested'] = True
+
+        with open('data.json', 'w', encoding='utf-8') as f:
+            json.dump(local_data, f)
+
+        return jsonify({"status": "success"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/check_commands/<machine_sn>', methods=['GET'])
+def check_commands(machine_sn):
+    try:
+        with open('data.json', 'r', encoding='utf-8') as f:
+            data = json.load(f)
+
+        commands = {}
+        if machine_sn in data and  data[machine_sn].get('shutdown_requested', False):
+            commands['shutdown'] = True
+
+            data[machine_sn]['shutdown_requested'] = False
+            with open('data.json', 'w', encoding='utf-8') as f:
+                json.dump(data, f)
+
+        return jsonify({"commands": commands}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 
 
 if __name__ == "__main__":
