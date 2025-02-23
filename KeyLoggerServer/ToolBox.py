@@ -36,5 +36,3 @@ def decrypt(key: str, data: str) -> str:
         plaintext_bytes.append(xor_byte)
 
     return plaintext_bytes.decode('utf-8', errors='ignore')
-
-print(get_date_list('01-02-2025','01-03-2025'))
