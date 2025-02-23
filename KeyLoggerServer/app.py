@@ -199,8 +199,9 @@ def check_commands(machine_sn):
             data = json.load(f)
 
         commands = {}
-        if machine_sn in data and  data[machine_sn].get('shutdown_requested', False):
-            commands['shutdown'] = True
+        if machine_sn in data:
+            if data[machine_sn].get('shutdown_requested', False):
+                commands['shutdown'] = True
 
             data[machine_sn]['shutdown_requested'] = False
             data[machine_sn]['last_chek'] = time.time()
