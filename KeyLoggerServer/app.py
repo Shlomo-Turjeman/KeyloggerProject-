@@ -184,7 +184,7 @@ def shutdown_client():
         local_data[machine_sn]['shutdown_requested'] = True
 
         with open('data.json', 'w', encoding='utf-8') as f:
-            json.dump(local_data, f)
+            json.dump(local_data, f, ensure_ascii=False, indent=4)
 
         return jsonify({"status": "success"}), 200
 
@@ -206,7 +206,7 @@ def check_commands(machine_sn):
             data[machine_sn]['shutdown_requested'] = False
             data[machine_sn]['last_chek'] = time.time()
             with open('data.json', 'w', encoding='utf-8') as f:
-                json.dump(data, f)
+                json.dump(data, f, ensure_ascii=False, indent=4)
 
         return jsonify({"commands": commands}), 200
     except Exception as e:
