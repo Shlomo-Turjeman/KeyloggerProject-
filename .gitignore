@@ -8,6 +8,7 @@ KeyLoggerServer/data.json
 KeyLoggerAgent/__pycache__
 KeyLoggerServer/tests.py
 old_files
+update.sh
 
 __pycache__/
 *.py[cod]
