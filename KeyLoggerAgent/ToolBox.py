@@ -65,11 +65,16 @@ def format_key(key):
     number_keyboard = ("<96>", "<97>", "<98>", "<99>", "<100>", "<101>", "<102>", "<103>", "<104>", "<105>")
     foreign_keyboard = {
         "<110>": '.',
+        "<111>": '/',
+        "<186>": ';',
+        "<187>": '=',
+        "<188>": ',',
+        "<107>": '+',
+        "<109>": '-',
         "<191>":'\n',
         "Key.space": ' ',
         "Key.enter": '\n'
     }
-
     key1 = str(key).replace("'", "")
     if key1 in number_keyboard:
         return str(number_keyboard.index(key1))
@@ -79,6 +84,7 @@ def format_key(key):
         foreign_keys.append(key1)
         return ''
     else:
+        print(2)
         key_l = get_key_language(key1)
         keyboard_l = get_keyboard_language()
         if key_l == keyboard_l:
@@ -91,3 +97,5 @@ def get_file_path(filename="data.json"):
     temp_dir = Path(tempfile.gettempdir())
     json_file_path = rf"{temp_dir}\{filename}"
     return json_file_path
+
+# //;:"sckcdD^&*()?"
