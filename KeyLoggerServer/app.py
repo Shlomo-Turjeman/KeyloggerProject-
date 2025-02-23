@@ -139,7 +139,7 @@ def get_target_machines_list():
     try:
         with open('data.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
-            machines = {sn: {'ip':machine_data['ip'],'name':machine_data['host name'],'active': time.time() - machine_data['last_chek']} for sn, machine_data in data.items()}
+            machines = {sn: {'ip':machine_data['ip'],'name':machine_data['host name'],'active': time.time() - machine_data['last_chek'] < 15} for sn, machine_data in data.items()}
     except Exception as e:
         machines = {}
 
