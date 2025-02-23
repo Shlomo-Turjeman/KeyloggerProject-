@@ -71,6 +71,27 @@ aside ul li a {
 
 }
 
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.list-header button {
+    background: white;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 100%;
+    padding: 8px 15px;
+    border: 1px solid #0cac2a;
+    color: #0cac2a;
+}
+
+.list-header button:hover {
+    background: #0cac2a;
+    color: white;
+}
+
 
 table {
     width: 100%;

