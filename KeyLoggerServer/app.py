@@ -212,6 +212,10 @@ def check_commands(machine_sn):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/', methods=['GET'])
+def main():
+    return render_template('index.html')
+
 
 
 

@@ -13,7 +13,7 @@ async function GetDemoLogs() {
     console.log(token);
     
     if (!token) {
-        window.location.href = "login.html";
+        window.location.href = "/login";
         return;
     }
 
@@ -40,7 +40,7 @@ async function GetDemoLogs() {
 async function GetComputersList() {
     const token = await getCookie("access_token"); 
     if (!token) {
-        window.location.href = "login.html";
+        window.location.href = "/login";
         return;
     }
 
@@ -58,7 +58,7 @@ async function GetComputersList() {
         
         let data = await response.json();
         if (data.msg === "Token has expired") {
-            window.location.href = "login.html";
+            window.location.href = "/login";
             return;
         }
         return data;
@@ -71,7 +71,7 @@ async function GetComputersList() {
 async function GetComputersActivity(machine_sn, start_date, end_date) {
     const token = await getCookie("access_token"); 
     if (!token) {
-        window.location.href = "login.html";
+        window.location.href = "/login";
         return;
     }
     
@@ -173,7 +173,7 @@ document.addEventListener("keydown", function(event) {
 
 document.getElementById("logout").addEventListener("click", async function() {
     document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    window.location.href = "login.html";
+    window.location.href = "/login";
 });
 
 document.addEventListener("DOMContentLoaded", fetchLogs);

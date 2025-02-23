@@ -16,6 +16,6 @@ document.getElementById("loginForm").addEventListener("submit", async function(e
     console.log("Cookies after login:", document.cookie);
 
     if (response.ok) {
-        window.location.href = "index.html";
+        window.location.href = "/";
     }
 });
