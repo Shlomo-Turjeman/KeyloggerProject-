@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify,make_response
+from flask import Flask, request, jsonify,make_response,render_template
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, JWTManager
 import os, random,string,datetime, json
@@ -153,7 +153,7 @@ def get_target_machines_list():
 @app.route('/login', methods=['POST','GET'])
 def login():
     if request.method == 'GET':
-        return login_user()
+        return render_template('login.html')
 
     data = request.json
     username = data.get("username")
