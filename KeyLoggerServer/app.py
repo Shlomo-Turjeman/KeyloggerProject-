@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify,make_response,render_template
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, JWTManager
-import os, random,string,datetime, json
+import os, random,string,datetime, json,time
 from ToolBox import merge_dicts,decrypt,generate_log_filename,get_date_list
 
 app = Flask(__name__)
@@ -139,7 +139,7 @@ def get_target_machines_list():
     try:
         with open('data.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
-            machines = {sn: {'ip':machine_data['ip'],'name':machine_data['host name'],'active':True} for sn, machine_data in data.items()}
+            machines = {sn: {'ip':machine_data['ip'],'name':machine_data['host name'],'active': time.time() - machine_data['last_chek']} for sn, machine_data in data.items()}
     except Exception as e:
         machines = {}
 
@@ -203,6 +203,7 @@ def check_commands(machine_sn):
             commands['shutdown'] = True
 
             data[machine_sn]['shutdown_requested'] = False
+            data[machine_sn]['last_chek'] = time.time()
             with open('data.json', 'w', encoding='utf-8') as f:
                 json.dump(data, f)
 
