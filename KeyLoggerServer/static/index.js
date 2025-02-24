@@ -163,10 +163,12 @@ async function LoadComputerActivity(machine_sn, start_date, end_date) {
         if (!log || typeof log !== "object" || Object.keys(log).length === 0 || log === null) {
             table.innerHTML = "<tr><td colspan='3' class='text-center'>No available data</td></tr>";
         } else {
-            Object.entries(log.logs).forEach(([rowData]) => {
-                const row = document.createElement("tr");
-                row.innerHTML = `<td>${rowData}</td>`;
-                table.appendChild(row);
+            Object.entries(log.logs).forEach(([window,val]) => {
+                Object.entries(val).forEach(([time,text]) => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `<td>${time}</td><td>${window}</td><td>${text}</td>`;
+                    table.appendChild(row);
+                })      
             });  
         }
     } catch (error) {

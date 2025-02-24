@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify,make_response,render_template
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, JWTManager
 import os, random,string,datetime, json,time
-from ToolBox import merge_dicts,decrypt,generate_log_filename,get_date_list
+from ToolBox import merge_dicts,decrypt,generate_log_filename,get_date_list,group_log_data
 from dotenv import load_dotenv
 
 app = Flask(__name__)
@@ -130,7 +130,8 @@ def get_keystrokes():
 
         decrypt_data_list = [{decrypt(key,k): decrypt(key,v) for k, v in data.items()} for data in list_key_logs]
         merged_data = merge_dicts(*decrypt_data_list)
-        return jsonify({"logs":merged_data,"info":info}), 200
+        grouped_data = group_log_data(merged_data)
+        return jsonify({"logs":grouped_data,"info":info}), 200
     except IndexError:
         return jsonify({"error": 'no data find'}), 200
     except Exception as e:
