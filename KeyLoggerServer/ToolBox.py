@@ -4,15 +4,25 @@ def generate_log_filename():
     return "log_" + datetime.datetime.now().strftime("%d-%m-%Y") + ".json"
 
 
-def get_date_list(start_date: str, end_date: str) -> list[str]:
-    date_list = []
-    current_date = datetime.datetime.strptime(start_date, "%d-%m-%Y").date()
-    end_date = datetime.datetime.strptime(end_date, "%d-%m-%Y").date()
-    while current_date <= end_date: #
-        date_list.append(current_date.strftime("%d-%m-%Y"))
-        current_date += datetime.timedelta(days=1)
+def get_date_list(start_date: str, end_date: str) -> list[str] | str:
+    try:
+        start_date_obj = datetime.datetime.strptime(start_date, "%d-%m-%Y").date()
+        end_date_obj = datetime.datetime.strptime(end_date, "%d-%m-%Y").date()
 
-    return date_list
+        if end_date_obj < start_date_obj:
+            return "End date is earlier than start date."
+
+        date_list = []
+        current_date = start_date_obj
+        while current_date <= end_date_obj:
+            date_list.append(current_date.strftime("%d-%m-%Y"))
+            current_date += datetime.timedelta(days=1)
+
+        return date_list
+
+    except ValueError:
+        return "Invalid date format or incorrect date."
+
 
 def merge_dicts(*dicts: dict[:str]) -> dict:
     dict_to_ret = dicts[0]
@@ -36,3 +46,46 @@ def decrypt(key: str, data: str) -> str:
         plaintext_bytes.append(xor_byte)
 
     return plaintext_bytes.decode('utf-8', errors='ignore')
+
+
+def group_log_data(data:dict[str:str],by='window') -> dict[str:dict[str:str]]:
+    formated_dict = {}
+    for k,v in data.items():
+        time = k[-8:]
+        date = k[-21:-11]
+        window = k[:-23]
+        text = v
+
+        if by == 'window':
+            main_key = window
+            sub_key = date + ' - '+time
+            value = text
+        elif by == 'date':
+            main_key = date
+            sub_key = window
+            value = text
+        elif by == 'text':
+            main_key = text
+            sub_key = window
+            value = date + ' - '+time
+        else:
+            return
+
+        if main_key not in formated_dict:
+            formated_dict[main_key]={}
+        if sub_key not in formated_dict[main_key]:
+            formated_dict[main_key][sub_key] = ""
+        formated_dict[main_key][sub_key] =value
+    return formated_dict
+
+
+
+if __name__ == '__main__':
+
+    demo = {
+            "KeyloggerProject app.py: 23/02/2025 - 23:25:41": "123",
+            "KeyloggerProject app.py: 18/02/2025 - 23:25:41": "456",
+            "KeyloggerProject config.yaml: 23/02/2025 - 23:26:43": "v",
+            "login - Google Chrome: 23/02/2025 - 23:26:06": "ap"
+        }
+    print(group_log_data(demo,by='text'))
