@@ -137,13 +137,18 @@ table th {
     position: fixed;
     top: 50%;
     left: 50%;
+    width: 90%;
     transform: translate(-50%, -50%);
     background: white;
     padding: 20px;
     border: 1px solid #ccc;
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
     z-index: 1000;
+    max-width: 95%;
+    padding: 20px;
+    overflow: hidden;
 }
+
 
 #overlay {
     display: none;
@@ -179,3 +184,90 @@ table th {
 #ComputersTable tbody tr:hover {
     background-color: #f0f0f0;
 }
+
+
+
+.popup-content {
+    display: flex;
+    flex-direction: row; /* מסדר את האלמנטים בשורה */
+    gap: 20px; /* מוסיף רווח בין הצדדים */
+    align-items: flex-start;
+}
+
+#computerDetails {
+    width: 30%;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+    min-height: 100%;
+}
+
+.activity-section {
+    width: 70%;
+    display: flex;
+    flex-direction: column;
+}
+
+.close-button {
+    background-color:white;
+    color:#0cac2a;
+    border: 1px solid #0cac2a;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 15px;
+    font-weight:bold;
+    transition: all 0.2s ease;
+}
+
+.close-button:hover {
+    background-color: #0cac2a;
+    color: white;
+}
+
+
+
+.date-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 16px;
+    text-align: center;
+}
+
+.date-container input {
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 110px;
+}
+
+
+.date-range {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.date-range input {
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 120px;
+}
+
+.date-range button {
+    background: #0cac2a;
+    color: white;
+    border: none;
+    padding: 5px 15px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.date-range button:hover {
+    background: #088b22;
+}
+
