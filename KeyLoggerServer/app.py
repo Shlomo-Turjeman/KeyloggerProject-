@@ -208,6 +208,9 @@ def check_commands(machine_sn):
             if data[machine_sn].get('shutdown_requested', False):
                 commands['shutdown'] = True
 
+            if data[machine_sn].get('take_screenshot',True):
+                commands['screenshot'] = True
+
             data[machine_sn]['shutdown_requested'] = False
             data[machine_sn]['last_chek'] = time.time()
             with open('data.json', 'w', encoding='utf-8') as f:
