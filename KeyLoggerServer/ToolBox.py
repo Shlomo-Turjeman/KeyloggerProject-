@@ -30,7 +30,7 @@ def merge_dicts(*dicts: dict[:str]) -> dict:
         for one_dict in dicts[1:]:
             for key, val in one_dict.items():
                 if key not in dict_to_ret:
-                    dict_to_ret[key] = ""C
+                    dict_to_ret[key] = ""
                 dict_to_ret[key] += val
 
     return dict_to_ret
