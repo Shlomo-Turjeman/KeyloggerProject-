@@ -151,6 +151,16 @@ async function openPopup(machineId, ip, name,active) {
     document.getElementById("endDate").value = today;
 
     LoadComputerActivity(machineId, formatDateToDDMMYYYY(today), formatDateToDDMMYYYY(today));
+
+    const stopListeningButton = document.getElementById("stopListening");
+    stopListeningButton.replaceWith(stopListeningButton.cloneNode(true));
+
+    document.getElementById("stopListening").addEventListener("click", function() {
+        {
+            const currentMachineId = document.getElementById("compId").textContent;
+            StopListening(currentMachineId);
+        }
+    });
 }
 
 
@@ -250,6 +260,11 @@ async function StopListening(machineId) {
         let data = await response.json();
 
         if (data.status === "success") {
+            let indicator = document.getElementById("indicator");
+    
+            indicator.classList.remove("active");
+            indicator.title = "Logging is not active."
+    
             fetchLogs();
         }
 
@@ -260,30 +275,7 @@ async function StopListening(machineId) {
     }
 }
 
-async function openPopup(machineId, ip, name) {
-    document.getElementById("compId").textContent = machineId;
-    document.getElementById("compIp").textContent = ip;
-    document.getElementById("compName").textContent = name;
 
-    popup.style.display = "block";
-    overlay.style.display = "block";
-
-    let today = new Date().toISOString().split('T')[0];
-    document.getElementById("startDate").value = today;
-    document.getElementById("endDate").value = today;
-
-    LoadComputerActivity(machineId, formatDateToDDMMYYYY(today), formatDateToDDMMYYYY(today));
-
-    const stopListeningButton = document.getElementById("stopListening");
-    stopListeningButton.replaceWith(stopListeningButton.cloneNode(true));
-
-    document.getElementById("stopListening").addEventListener("click", function() {
-        {
-            const currentMachineId = document.getElementById("compId").textContent;
-            StopListening(currentMachineId);
-        }
-    });
-}
 
 function closePopup() {
     popup.style.display = "none";
