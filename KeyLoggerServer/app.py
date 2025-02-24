@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify,make_response,render_template, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, JWTManager
-import os, random,string,datetime, json,time
+import os, random,string,datetime, json,time, base64
 from ToolBox import merge_dicts,decrypt,generate_log_filename,get_date_list,group_log_data
 from dotenv import load_dotenv
 
