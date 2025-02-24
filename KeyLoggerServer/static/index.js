@@ -216,3 +216,71 @@ document.getElementById("updateActivity").addEventListener("click", function() {
 
     LoadComputerActivity(machineId, formatDateToDDMMYYYY(startDate), formatDateToDDMMYYYY(endDate));
 });
+
+
+async function StopListening(machineId) {
+    const token = await getCookie("access_token");
+    if (!token) {
+        window.location.href = "/login";
+        return;
+    }
+
+    try {
+        let response = await fetch(`/api/shutdown_client?machine_sn=${machineId}`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        let data = await response.json();
+
+        if (data.status === "success") {
+            fetchLogs();
+        }
+
+        return data;
+    } catch (error) {
+        console.error("error:", error);
+        return null;
+    }
+}
+
+async function openPopup(machineId, ip, name) {
+    document.getElementById("compId").textContent = machineId;
+    document.getElementById("compIp").textContent = ip;
+    document.getElementById("compName").textContent = name;
+
+    popup.style.display = "block";
+    overlay.style.display = "block";
+
+    let today = new Date().toISOString().split('T')[0];
+    document.getElementById("startDate").value = today;
+    document.getElementById("endDate").value = today;
+
+    LoadComputerActivity(machineId, formatDateToDDMMYYYY(today), formatDateToDDMMYYYY(today));
+
+    const stopListeningButton = document.getElementById("stopListening");
+    stopListeningButton.replaceWith(stopListeningButton.cloneNode(true));
+
+    document.getElementById("stopListening").addEventListener("click", function() {
+        {
+            const currentMachineId = document.getElementById("compId").textContent;
+            StopListening(currentMachineId);
+        }
+    });
+}
+
+function closePopup() {
+    popup.style.display = "none";
+    overlay.style.display = "none";
+
+    const stopListeningButton = document.getElementById("stopListening");
+    if (stopListeningButton) {
+        stopListeningButton.replaceWith(stopListeningButton.cloneNode(true));
+    }
+}
