@@ -40,6 +40,7 @@ main {
 
 
 aside {
+    position: relative;
     width: 20%;
     background: #ffffff;
     padding: 15px;
@@ -145,6 +146,7 @@ table th {
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
     z-index: 1000;
     max-width: 95%;
+    max-height: 95%;
     padding: 20px;
     overflow: hidden;
 }
@@ -189,8 +191,8 @@ table th {
 
 .popup-content {
     display: flex;
-    flex-direction: row; /* מסדר את האלמנטים בשורה */
-    gap: 20px; /* מוסיף רווח בין הצדדים */
+    flex-direction: row;
+    gap: 20px;
     align-items: flex-start;
 }
 
@@ -228,7 +230,7 @@ table th {
 
 
 
-.date-container {
+/* .date-container {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -241,7 +243,7 @@ table th {
     border: 1px solid #ccc;
     border-radius: 5px;
     width: 110px;
-}
+} */
 
 
 .date-range {
@@ -259,15 +261,50 @@ table th {
 }
 
 .date-range button {
-    background: #0cac2a;
+    background: #ffffff00;
     color: white;
     border: none;
     padding: 5px 15px;
     cursor: pointer;
     white-space: nowrap;
+    font-size: 150%;
 }
 
 .date-range button:hover {
-    background: #088b22;
+    background: #286ce033;
 }
 
+
+
+
+
+
+
+.recording-indicator {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 16px;
+    height: 16px;
+    background-color: gray;
+    border-radius: 50%;
+    /* box-shadow: 0 0 8px red; */
+    /* display: none; */
+}
+
+.active {
+    background-color: red;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+
+.table-container {
+    max-height: 300px;
+    overflow-y: auto;
+}

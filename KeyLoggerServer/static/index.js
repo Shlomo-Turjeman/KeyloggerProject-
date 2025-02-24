@@ -128,10 +128,20 @@ function formatDateToDDMMYYYY(dateStr) {
 }
 
 
-async function openPopup(machineId, ip, name) {
+async function openPopup(machineId, ip, name,active) {
     document.getElementById("compId").textContent = machineId;
     document.getElementById("compIp").textContent = ip;
     document.getElementById("compName").textContent = name;
+
+    let indicator = document.getElementById("indicator");
+    if (active==='✅'){
+        indicator.classList.add("active");
+        indicator.title = "Logging is active."
+    }else {
+        indicator.classList.remove("active");
+        indicator.title = "Logging is not active."
+    }
+
 
     popup.style.display = "block";
     overlay.style.display = "block";
@@ -204,7 +214,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         let rowData = Array.from(row.children).map(td => td.textContent.trim());
 
-        openPopup(rowData[0], rowData[1], rowData[2]);
+        openPopup(rowData[0], rowData[1], rowData[2],rowData[3]);
     });
 });
 
