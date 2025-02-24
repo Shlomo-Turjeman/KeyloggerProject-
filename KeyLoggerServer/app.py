@@ -197,6 +197,77 @@ def shutdown_client():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/api/screenshot/<machine_sn>', methods=['GET', 'POST'])
+def screenshot(machine_sn):
+    try:
+        with open('data.json', 'r', encoding='utf-8') as f:
+            local_data = json.load(f)
+
+        if machine_sn not in local_data:
+            return jsonify({"error": "machine not exist"}), 400
+
+        if request.method == 'GET':
+            local_data[machine_sn]['take_screenshot'] = True
+
+            with open('data.json', 'w', encoding='utf-8') as f:
+                json.dump(local_data, f, ensure_ascii=False, indent=4)
+
+            return jsonify({"status": "Screenshot requested"}), 200
+
+        elif request.method == 'POST':
+            data = request.get_json()
+            if not data or "screenshot" not in data:
+                return jsonify({"error": "Invalid payload"}), 400
+
+            screenshot_data = data["screenshot"]
+
+            try:
+                screenshot_bytes = base64.b64decode(screenshot_data)
+
+                screenshots_dir = os.path.join(local_data[machine_sn]['path'], 'screenshots')
+                os.makedirs(screenshots_dir, exist_ok=True)
+
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                screenshot_filename = f"screenshot_{timestamp}.png"
+                screenshot_path = os.path.join(screenshots_dir, screenshot_filename)
+
+                with open(screenshot_path, 'wb') as f:
+                    f.write(screenshot_bytes)
+
+                local_data[machine_sn]['take_screenshot'] = False
+                local_data[machine_sn]['last_screenshot'] = screenshot_filename
+
+                with open('data.json', 'w', encoding='utf-8') as f:
+                    json.dump(local_data, f, ensure_ascii=False, indent=4)
+
+                return jsonify({"status": "success", "filename": screenshot_filename}), 200
+            except Exception as e:
+                return jsonify({"error": f"Could not save screenshot: {str(e)}"}), 500
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/screenshot/<machine_sn>/view', methods=['GET'])
+def view_screenshot(machine_sn):
+    try:
+        with open('data.json', 'r', encoding='utf-8') as f:
+            data = json.load(f)
+
+        if machine_sn not in data:
+            return jsonify({"error": "Machine not found"}), 404
+
+        if 'last_screenshot' not in data[machine_sn]:
+            return jsonify({"error": "No screenshot available"}), 404
+
+        screenshots_dir = os.path.join(data[machine_sn]['path'], 'screenshots')
+        filename = data[machine_sn]['last_screenshot']
+
+        return send_from_directory(screenshots_dir, filename)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/api/check_commands/<machine_sn>', methods=['GET'])
 def check_commands(machine_sn):
     try:
