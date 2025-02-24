@@ -60,24 +60,20 @@
                     <p><strong>ID:</strong> <span id="compId"></span></p>
                     <p><strong>IP:</strong> <span id="compIp"></span></p>
                     <p><strong>Name:</strong> <span id="compName"></span></p>
+                    <div class="recording-indicator" id="indicator"></div>
                 </aside>
         
                 <div class="activity-section">
                     <div class="date-range">
-                        <div class="date-container">
-                            <label for="startDate">From</label>
-                            <input type="date" id="startDate">
-                        </div>
-                        
-                        <div class="date-container">
-                            <label for="endDate">To</label>
-                            <input type="date" id="endDate">
-                        </div>
+                        <label for="startDate">From</label>
+                        <input type="date" id="startDate">
                     
-                        <button id="updateActivity">Update</button>
-                    </div>
-                    <p id="message"></p>                    
-        
+                        <label for="endDate">To</label>
+                        <input type="date" id="endDate">
+                        <button id="updateActivity">🔄️</button>
+                    </div>  
+
+                    <div class="table-container">
                     <table>
                         <thead>
                             <tr>
@@ -90,6 +86,7 @@
                             <!-- נתונים ייכנסו כאן -->
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
         </section>
