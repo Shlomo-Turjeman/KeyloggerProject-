@@ -41,7 +41,7 @@ class FileWriter(Write):
     def __init__(self):
         self.path = ToolBox.get_file_path()
 
-    def write(self, sn, data: dict[str, str]) -> bool:
+    def write(self, sn, data: dict[str:str]) -> bool:
         try:
             if os.path.exists(self.path) and os.path.getsize(self.path) > 0:
                 with open(self.path, 'r', encoding='utf-8') as file:

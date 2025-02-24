@@ -211,6 +211,22 @@ table th {
     flex-direction: column;
 }
 
+.close-button {
+    background-color:white;
+    color:#0cac2a;
+    border: 1px solid #0cac2a;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 15px;
+    font-weight:bold;
+    transition: all 0.2s ease;
+}
+
+.close-button:hover {
+    background-color: #0cac2a;
+    color: white;
+}
 
 
 
