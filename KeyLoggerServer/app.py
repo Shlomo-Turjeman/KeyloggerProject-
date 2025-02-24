@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify,make_response,render_template
+from flask import Flask, request, jsonify,make_response,render_template, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, JWTManager
 import os, random,string,datetime, json,time
