@@ -74,25 +74,15 @@ async function GetComputersActivity(machine_sn, start_date, end_date) {
         window.location.href = "/login";
         return;
     }
-    
-    try {
         let response = await fetch("/api/get_keystrokes?machine_sn=" + machine_sn + "&start_date=" + start_date + "&end_date=" + end_date, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${token}`
             }
         });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        
         let data = await response.json();
+        
         return data;
-    } catch (error) {
-        console.error("Error fetching computers activity:", error);
-        return null;
-    }
 }
 
 async function fetchLogs() {
@@ -129,16 +119,46 @@ const overlay = document.getElementById("overlay");
 // const openPopupBtn = document.getElementById("openPopup");
 const closePopupBtn = document.getElementById("closePopup");
 
-async function openPopup(machine_sn, start_date, end_date) {
+function formatDateToDDMMYYYY(dateStr) {
+    let date = new Date(dateStr);
+    let day = String(date.getDate()).padStart(2, '0');
+    let month = String(date.getMonth() + 1).padStart(2, '0');
+    let year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+}
+
+
+async function openPopup(machineId, ip, name) {
+    document.getElementById("compId").textContent = machineId;
+    document.getElementById("compIp").textContent = ip;
+    document.getElementById("compName").textContent = name;
+
     popup.style.display = "block";
     overlay.style.display = "block";
+
+    let today = new Date().toISOString().split('T')[0];
+    document.getElementById("startDate").value = today;
+    document.getElementById("endDate").value = today;
+
+    LoadComputerActivity(machineId, formatDateToDDMMYYYY(today), formatDateToDDMMYYYY(today));
+}
+
+
+function closePopup() {
+    popup.style.display = "none";
+    overlay.style.display = "none";
+}
+async function LoadComputerActivity(machine_sn, start_date, end_date) {
     const table = document.getElementById("ActivityTable");
     table.innerHTML = "<tr><td colspan='3' class='text-center'>Loading data...</td></tr>";
-
     try {
         const log = await GetComputersActivity(machine_sn, start_date, end_date);
-        console.log(log);
         table.innerHTML = "";
+        if (log.error) {
+            table.innerHTML = `<tr><td colspan='3' class='text-center'>${log.error}</td></tr>`;
+            return;
+        }
+        
         
         if (!log || typeof log !== "object" || Object.keys(log).length === 0 || log === null) {
             table.innerHTML = "<tr><td colspan='3' class='text-center'>No available data</td></tr>";
@@ -155,12 +175,7 @@ async function openPopup(machine_sn, start_date, end_date) {
     }
 }
 
-function closePopup() {
-    popup.style.display = "none";
-    overlay.style.display = "none";
-}
 
-// openPopupBtn.addEventListener("click", openPopup);
 
 closePopupBtn.addEventListener("click", closePopup);
 overlay.addEventListener("click", closePopup);
@@ -186,13 +201,16 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!row) return;
 
         let rowData = Array.from(row.children).map(td => td.textContent.trim());
-        // console.log(rowData);
-        // handleRowClick(rowData);
-        //corrently date format dd-mm-yyyy
-        openPopup(rowData[0], '23-02-2025', '23-02-2025');
-    });
 
-    function handleRowClick(data) {
-        alert(`Clicked row data: ${data.join(" | ")}`);
-    }
+        openPopup(rowData[0], rowData[1], rowData[2]);
+    });
+});
+
+
+document.getElementById("updateActivity").addEventListener("click", function() {
+    let machineId = document.getElementById("compId").textContent;
+    let startDate = document.getElementById("startDate").value;
+    let endDate = document.getElementById("endDate").value;
+
+    LoadComputerActivity(machineId, formatDateToDDMMYYYY(startDate), formatDateToDDMMYYYY(endDate));
 });

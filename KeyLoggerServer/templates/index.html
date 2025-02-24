@@ -48,22 +48,53 @@
             </table>
         </section>
         <div id="overlay"></div>
+
+
         <section class="ComputerActivity" id="ComputerActivity">
             <button id="closePopup" aria-label="סגור">×</button>
             <h2>Computer Activity</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>time</th>
-                        <th>window</th>
-                        <th>text</th>
-                    </tr>
-                </thead>
-                <tbody id="ActivityTable">
-                    <!-- <tr><td>.</td></tr> -->
-                </tbody>
-            </table>
+        
+            <div class="popup-content">
+                <aside id="computerDetails">
+                    <h3>Computer Info</h3>
+                    <p><strong>ID:</strong> <span id="compId"></span></p>
+                    <p><strong>IP:</strong> <span id="compIp"></span></p>
+                    <p><strong>Name:</strong> <span id="compName"></span></p>
+                </aside>
+        
+                <div class="activity-section">
+                    <div class="date-range">
+                        <div class="date-container">
+                            <label for="startDate">From</label>
+                            <input type="date" id="startDate">
+                        </div>
+                        
+                        <div class="date-container">
+                            <label for="endDate">To</label>
+                            <input type="date" id="endDate">
+                        </div>
+                    
+                        <button id="updateActivity">Update</button>
+                    </div>
+                    <p id="message"></p>                    
+        
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Window</th>
+                                <th>Text</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ActivityTable">
+                            <!-- נתונים ייכנסו כאן -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </section>
+        
+  
     </main>
     <script src="{{ url_for('static', filename='index.js') }}"></script>
 </body>
