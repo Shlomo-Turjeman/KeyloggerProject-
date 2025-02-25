@@ -1,7 +1,26 @@
-import base64,datetime
+import base64,datetime,json
 
 def generate_log_filename():
     return "log_" + datetime.datetime.now().strftime("%d-%m-%Y") + ".json"
+
+def generate_commend_file(serial_number):
+    data_path = 'commend.json'
+    try:
+        with open(data_path, 'r', encoding='utf-8') as file:
+            try:
+                data_dict = json.load(file)
+            except json.JSONDecodeError:
+                data_dict = {}
+    except FileNotFoundError:
+        data_dict = {}
+
+    data_dict[serial_number] = {"shutdown_requested": False,"take_screenshot": False}
+
+    with open(data_path, 'w', encoding='utf-8') as file:
+        json.dump(data_dict, file, ensure_ascii=False, indent=4)
+
+
+
 
 
 def get_date_list(start_date: str, end_date: str) -> list[str] | str:
@@ -77,7 +96,6 @@ def group_log_data(data:dict[str:str],by='window') -> dict[str:dict[str:str]]:
             formated_dict[main_key][sub_key] = ""
         formated_dict[main_key][sub_key] =value
     return formated_dict
-
 
 
 if __name__ == '__main__':
