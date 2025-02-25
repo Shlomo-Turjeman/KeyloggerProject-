@@ -36,7 +36,9 @@ async function GetDemoLogs() {
         });
 
         if (!response.ok) {
-            handleTokenError(`HTTP error! Status: ${response.status}`);
+            if (response.status === 401 || response.status === 403) {
+                handleTokenError(`HTTP error! Status: ${response.status}`);
+            }
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
         
@@ -69,7 +71,9 @@ async function GetComputersList() {
         });
 
         if (!response.ok) {
-            handleTokenError(`HTTP error! Status: ${response.status}`);
+            if (response.status === 401 || response.status === 403) {
+                handleTokenError(`HTTP error! Status: ${response.status}`);
+            }
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
         
@@ -101,7 +105,9 @@ async function GetComputersActivity(machine_sn, start_date, end_date) {
         });
         
         if (!response.ok) {
-            handleTokenError(`HTTP error! Status: ${response.status}`);
+            if (response.status === 401 || response.status === 403) {
+                handleTokenError(`HTTP error! Status: ${response.status}`);
+            }
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
         
@@ -118,6 +124,73 @@ async function GetComputersActivity(machine_sn, start_date, end_date) {
     }
 }
 
+let loadingPopups = {};
+let nextPopupId = 1;
+
+/**
+ * Opens a new loading popup
+ * @param {string} title Title of the popup
+ * @param {string} message Message to display in the popup
+ * @param {string} entityId (optional) ID of the entity the popup is related to
+ * @param {string} entityIdLabel (optional) Label for the entity ID
+ * @returns {number} Unique ID of the popup
+ */
+function openLoadingPopup(title, message, entityId = null, entityIdLabel = "ID") {
+    const popupId = nextPopupId++;
+    
+    const popupElement = document.createElement('div');
+    popupElement.className = 'loading-popup';
+    popupElement.id = `loadingPopup_${popupId}`;
+    popupElement.innerHTML = `
+        <h3>${title}</h3>
+        <div class="spinner"></div>
+        <p class="loading-message">${message}</p>
+        ${entityId ? `<p class="entity-id">${entityIdLabel}: <span>${entityId}</span></p>` : ''}
+    `;
+    
+    document.body.appendChild(popupElement);
+    
+    popupElement.style.display = 'block';
+    document.getElementById("overlay").style.display = 'block';
+    
+    loadingPopups[popupId] = {
+        element: popupElement,
+        entityId: entityId
+    };
+    
+    return popupId;
+}
+
+/**
+ * Closes a loading popup by ID
+ * @param {number} popupId ID of the popup to close
+ */
+function closeLoadingPopup(popupId) {
+    if (!loadingPopups[popupId]) return;
+    
+    document.body.removeChild(loadingPopups[popupId].element);
+    
+    delete loadingPopups[popupId];
+    
+    if (Object.keys(loadingPopups).length === 0 && !isPopupOpen) {
+        document.getElementById("overlay").style.display = 'none';
+    }
+}
+
+/**
+ * Returns a popup ID by entity ID
+ * @param {string} entityId Entity ID to search for
+ * @returns {number|null} Popup ID or null if not found
+ */
+function getPopupIdByEntityId(entityId) {
+    for (const [popupId, popupData] of Object.entries(loadingPopups)) {
+        if (popupData.entityId === entityId) {
+            return parseInt(popupId);
+        }
+    }
+    return null;
+}
+
 async function StopListening(machineId) {
     const token = await getCookie("access_token");
     if (!token) {
@@ -126,6 +199,13 @@ async function StopListening(machineId) {
     }
 
     try {
+        const popupId = openLoadingPopup(
+            "Machine Shutdown",
+            "Please wait while the machine is shutting down",
+            machineId,
+            "Machine ID"
+        );
+        
         let response = await fetch(`/api/shutdown?machine_sn=${machineId}`, {
             method: "POST",
             headers: {
@@ -134,27 +214,68 @@ async function StopListening(machineId) {
         });
 
         if (!response.ok) {
-            handleTokenError(`HTTP error! Status: ${response.status}`);
+            closeLoadingPopup(popupId);
+            if (response.status === 401 || response.status === 403) {
+                handleTokenError(`HTTP error! Status: ${response.status}`);
+            }
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
 
         let data = await response.json();
         if (data.msg === "Token has expired") {
+            closeLoadingPopup(popupId);
             handleTokenError("Token has expired");
             return;
         }
 
         if (data.status === "success") {
-            let indicator = document.getElementById("indicator");
-    
-            indicator.classList.remove("active");
-            indicator.title = "Logging is not active."
-    
-            fetchLogs();
+            let checkStatusInterval = setInterval(async () => {
+                try {
+                    const machinesData = await GetComputersList();
+                    
+                    if (!machinesData || 
+                        !machinesData[machineId] || 
+                        (machinesData[machineId] && machinesData[machineId].active === false)) {
+                        
+                        clearInterval(checkStatusInterval);
+                        closeLoadingPopup(popupId);
+                        
+                        let indicator = document.getElementById("indicator");
+                        if (indicator) {
+                            indicator.classList.remove("active");
+                            indicator.title = "Logging is not active.";
+                        }
+                        
+                        const stopButton = document.getElementById("stopListening");
+                        if (stopButton) {
+                            stopButton.style.display = "none";
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error checking machine status:", error);
+                }
+            }, 2000);
+            
+            setTimeout(() => {
+                if (checkStatusInterval) {
+                    clearInterval(checkStatusInterval);
+                    
+                    const currentPopupId = getPopupIdByEntityId(machineId);
+                    if (currentPopupId !== null) {
+                        closeLoadingPopup(currentPopupId);
+                    }
+                }
+            }, 30000);
         }
 
         return data;
     } catch (error) {
+        // Check if there's an open popup for this machine and close it
+        const currentPopupId = getPopupIdByEntityId(machineId);
+        if (currentPopupId !== null) {
+            closeLoadingPopup(currentPopupId);
+        }
+        
         console.error("Error stopping listener:", error);
         return null;
     }
@@ -177,7 +298,9 @@ async function deleteComputer(machineId) {
         });
 
         if (!response.ok) {
-            handleTokenError(`HTTP error! Status: ${response.status}`);
+            if (response.status === 401 || response.status === 403) {
+                handleTokenError(`HTTP error! Status: ${response.status}`);
+            }
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
 
@@ -422,11 +545,24 @@ document.addEventListener("DOMContentLoaded", function() {
     fetchLogs();
     
     closePopupBtn.addEventListener("click", closePopup);
-    overlay.addEventListener("click", closePopup);
+    
+    overlay.addEventListener("click", function() {
+        if (Object.keys(loadingPopups).length > 0) {
+            return;
+        } 
+        else if (isPopupOpen) {
+            closePopup();
+        }
+    });
     
     document.addEventListener("keydown", function(event) {
         if (event.key === "Escape") {
-            closePopup();
+            if (Object.keys(loadingPopups).length > 0) {
+                return;
+            } 
+            else if (isPopupOpen) {
+                closePopup();
+            }
         }
     });
     
