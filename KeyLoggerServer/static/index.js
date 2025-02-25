@@ -160,6 +160,43 @@ async function StopListening(machineId) {
     }
 }
 
+async function deleteComputer(machineId) {
+
+    const token = await getCookie("access_token");
+    if (!token) {
+        handleTokenError("No token found");
+        return;
+    }
+
+    try {
+        let response = await fetch(`/api/machine/${machineId}`, {
+            method: "DELETE",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            handleTokenError(`HTTP error! Status: ${response.status}`);
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        let data = await response.json();
+        if (data.msg === "Token has expired") {
+            handleTokenError("Token has expired");
+            return;
+        }
+
+        if (data.status === "success") {
+            fetchLogs();
+        }
+
+        return data;
+    } catch (error) {
+        console.error("Error deleting computer:", error);
+        return null;
+    }
+}
 
 let isPopupOpen = false;
 let autoRefreshInterval = null;
@@ -173,34 +210,48 @@ async function fetchLogs() {
     try {
         const data = await GetComputersList();
         
-
         let newContent = "";
         
         if (!data || typeof data !== "object" || Object.keys(data).length === 0) { 
-            newContent = "<tr><td colspan='4' class='text-center'>No available data</td></tr>";
+            newContent = "<tr><td colspan='5' class='text-center'>No available data</td></tr>";
         } else {
             Object.entries(data).forEach(([id, details]) => {
                 newContent += `
-                    <tr>
+                    <tr data-id="${id}">
                         <td>${id}</td>
                         <td>${details.ip}</td>
                         <td>${details.name}</td>
-                        <td>${details.active ? '✅' : '🟩'}</td>
+                        <td>
+                            <div class="cell-container">
+                                <span class="text">${details.active ? '✅' : '🟩'}</span>
+                                ${!details.active ? `<button class="delete-button" data-id="${id}">🗑️</button>` : ''}
+                            </div>
+                        </td>
                     </tr>
                 `;
             });
         }
         
-
         tableBody.innerHTML = newContent;
         
-
         addRowClickListeners();
+        addDeleteButtonListeners();
         
     } catch (error) {
         console.error("Error in fetchLogs:", error);
-        tableBody.innerHTML = "<tr><td colspan='4' class='text-center'>Error loading data</td></tr>";
+        tableBody.innerHTML = "<tr><td colspan='5' class='text-center'>Error loading data</td></tr>";
     }
+}
+
+function addDeleteButtonListeners() {
+    const deleteButtons = document.querySelectorAll(".delete-button");
+    deleteButtons.forEach(button => {
+        button.addEventListener("click", function(event) {
+            event.stopPropagation();
+            const machineId = this.getAttribute("data-id");
+            deleteComputer(machineId);
+        });
+    });
 }
 
 function formatDateToDDMMYYYY(dateStr) {
@@ -217,7 +268,6 @@ async function LoadComputerActivity(machine_sn, start_date, end_date) {
     try {
         const log = await GetComputersActivity(machine_sn, start_date, end_date);
         
-
         let newContent = "";
         
         if (!log) {
@@ -234,7 +284,6 @@ async function LoadComputerActivity(machine_sn, start_date, end_date) {
             });  
         }
         
-
         activityTable.innerHTML = newContent;
         
     } catch (error) {
@@ -254,7 +303,6 @@ async function updateMachineStatus() {
         const machineDetails = data[currentMachineId];
         const wasActive = document.getElementById("indicator").classList.contains("active");
         
-
         let indicator = document.getElementById("indicator");
         if (machineDetails.active) {
             indicator.classList.add("active");
@@ -264,7 +312,6 @@ async function updateMachineStatus() {
             indicator.title = "Logging is not active.";
         }
         
-
         const stopButton = document.getElementById("stopListening");
         if (machineDetails.active) {
             stopButton.style.display = "block";

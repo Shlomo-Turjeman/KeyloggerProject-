@@ -82,6 +82,7 @@ def create_machine():
     return jsonify({"serial_number": serial_number,"key":key}), 201
 
 @app.route('/api/machine/<machine_sn>', methods=['DELETE'])
+@jwt_required()
 def delete_machine(machine_sn):
     machine_sn = str(machine_sn)
     try:
@@ -113,8 +114,6 @@ def get_keystrokes(machine_sn):
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
 
-    if not machine_sn:
-        return jsonify({"error": "invalid machine serial number"}), 400
     if not start_date or not end_date:
         return jsonify({"error": "invalid date range"}), 400
 
