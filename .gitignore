@@ -5,6 +5,7 @@ old_files/
 *.ipr
 KeyLoggerServer/logs
 KeyLoggerServer/data.json
+KeyLoggerServer/users.json
 KeyLoggerAgent/__pycache__
 KeyLoggerServer/tests.py
 old_files
