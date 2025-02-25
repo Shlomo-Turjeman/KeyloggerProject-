@@ -21,7 +21,7 @@ class IKeyLoggerManager(ABC):
         pass
 
 
-class Write(ABC):
+class IWrite(ABC):
     @abstractmethod
     def write(self, sn:int, data: str) -> bool:
         pass

