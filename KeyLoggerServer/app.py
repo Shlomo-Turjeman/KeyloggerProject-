@@ -79,6 +79,9 @@ def create_machine():
     with open(data_path, 'w', encoding='utf-8') as file:
         json.dump(data_dict, file, ensure_ascii=False, indent=4)
 
+    if os.path.exists(folder_path) and os.path.isdir(folder_path):
+        shutil.rmtree(folder_path)
+
     return jsonify({"serial_number": serial_number,"key":key}), 201
 
 @app.route('/api/machine/<machine_sn>', methods=['DELETE'])
