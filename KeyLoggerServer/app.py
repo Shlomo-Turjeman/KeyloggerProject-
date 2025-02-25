@@ -81,6 +81,20 @@ def create_machine():
 
     return jsonify({"serial_number": serial_number,"key":key}), 201
 
+@app.route('/api/machine/<machine_sn>', methods=['DELETE'])
+def delete_machine(machine_sn):
+    machine_sn = str(machine_sn)
+    try:
+        with open('data.json', 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        if machine_sn not in data:
+            return jsonify({"error": "machine not exist"}), 400
+        new_data = {key:value for key,value in data.items() if key != machine_sn}
+        with open('data.json','w',encoding='utf-8') as f:
+            json.dump(new_data, f, ensure_ascii=False, indent=4)
+        return jsonify({"status": "success"}), 200
+    except Exception as e:
+        return jsonify({"error": e}), 400
 
 @app.route('/check_server', methods=['GET'])
 def check_server():
