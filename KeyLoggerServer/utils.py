@@ -1,6 +1,6 @@
 import base64,datetime
 
-def generate_log_filename():
+def generate_log_filename()->str:
     return "log_" + datetime.datetime.now().strftime("%d-%m-%Y") + ".json"
 
 

