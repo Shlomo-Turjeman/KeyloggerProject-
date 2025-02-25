@@ -160,32 +160,46 @@ async function StopListening(machineId) {
     }
 }
 
-async function fetchLogs() {
-    const table = document.getElementById("ComputersTableBody");
-    table.innerHTML = "<tr><td colspan='4' class='text-center'>Loading data...</td></tr>";
+// משתנים גלובליים לבקרת העדכון האוטומטי
+let isPopupOpen = false;
+let autoRefreshInterval = null;
+let currentMachineId = null;
+let currentStartDate = null;
+let currentEndDate = null;
 
+async function fetchLogs() {
+    const tableBody = document.getElementById("ComputersTableBody");
+    
     try {
         const data = await GetComputersList();
-        table.innerHTML = "";
-
+        
+        // יצירת תוכן HTML חדש
+        let newContent = "";
+        
         if (!data || typeof data !== "object" || Object.keys(data).length === 0) { 
-            table.innerHTML = "<tr><td colspan='4' class='text-center'>No available data</td></tr>";
-            return;
+            newContent = "<tr><td colspan='4' class='text-center'>No available data</td></tr>";
+        } else {
+            Object.entries(data).forEach(([id, details]) => {
+                newContent += `
+                    <tr>
+                        <td>${id}</td>
+                        <td>${details.ip}</td>
+                        <td>${details.name}</td>
+                        <td>${details.active ? '✅' : '🟩'}</td>
+                    </tr>
+                `;
+            });
         }
-
-        Object.entries(data).forEach(([id, details]) => {
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${id}</td>
-                <td>${details.ip}</td>
-                <td>${details.name}</td>
-                <td>${details.active ? '✅' : '🟩'}</td>
-            `;
-            table.appendChild(row);
-        });
+        
+        // עדכון התוכן בצורה חלקה
+        tableBody.innerHTML = newContent;
+        
+        // הוספת אירועי לחיצה מחדש
+        addRowClickListeners();
+        
     } catch (error) {
         console.error("Error in fetchLogs:", error);
-        table.innerHTML = "<tr><td colspan='4' class='text-center'>Error loading data</td></tr>";
+        tableBody.innerHTML = "<tr><td colspan='4' class='text-center'>Error loading data</td></tr>";
     }
 }
 
@@ -198,36 +212,73 @@ function formatDateToDDMMYYYY(dateStr) {
 }
 
 async function LoadComputerActivity(machine_sn, start_date, end_date) {
-    const table = document.getElementById("ActivityTable");
-    table.innerHTML = "<tr><td colspan='3' class='text-center'>Loading data...</td></tr>";
+    const activityTable = document.getElementById("ActivityTable");
+    
     try {
         const log = await GetComputersActivity(machine_sn, start_date, end_date);
-        table.innerHTML = "";
+        
+        // יצירת תוכן HTML חדש
+        let newContent = "";
         
         if (!log) {
-            table.innerHTML = "<tr><td colspan='3' class='text-center'>No available data</td></tr>";
-            return;
-        }
-        
-        if (log.error) {
-            table.innerHTML = `<tr><td colspan='3' class='text-center'>${log.error}</td></tr>`;
-            return;
-        }
-        
-        if (typeof log !== "object" || Object.keys(log).length === 0 || !log.logs) {
-            table.innerHTML = "<tr><td colspan='3' class='text-center'>No available data</td></tr>";
+            newContent = "<tr><td colspan='3' class='text-center'>No available data</td></tr>";
+        } else if (log.error) {
+            newContent = `<tr><td colspan='3' class='text-center'>${log.error}</td></tr>`;
+        } else if (typeof log !== "object" || Object.keys(log).length === 0 || !log.logs) {
+            newContent = "<tr><td colspan='3' class='text-center'>No available data</td></tr>";
         } else {
             Object.entries(log.logs).forEach(([window, val]) => {
                 Object.entries(val).forEach(([time, text]) => {
-                    const row = document.createElement("tr");
-                    row.innerHTML = `<td>${time}</td><td>${window}</td><td>${text}</td>`;
-                    table.appendChild(row);
+                    newContent += `<tr><td>${time}</td><td>${window}</td><td>${text}</td></tr>`;
                 });
             });  
         }
+        
+        // עדכון התוכן בצורה חלקה
+        activityTable.innerHTML = newContent;
+        
     } catch (error) {
         console.error("Error in LoadComputerActivity:", error);
-        table.innerHTML = "<tr><td colspan='3' class='text-center'>Error loading data</td></tr>";
+        activityTable.innerHTML = "<tr><td colspan='3' class='text-center'>Error loading data</td></tr>";
+    }
+}
+
+// פונקציה חדשה לעדכון מצב המחשב
+async function updateMachineStatus() {
+    if (!currentMachineId) return;
+    
+    try {
+        const data = await GetComputersList();
+        if (!data || !data[currentMachineId]) return;
+        
+        const machineDetails = data[currentMachineId];
+        const wasActive = document.getElementById("indicator").classList.contains("active");
+        
+        // עדכון אינדיקטור הפעילות
+        let indicator = document.getElementById("indicator");
+        if (machineDetails.active) {
+            indicator.classList.add("active");
+            indicator.title = "Logging is active.";
+        } else {
+            indicator.classList.remove("active");
+            indicator.title = "Logging is not active.";
+        }
+        
+        // הסתרה או הצגה של כפתור העצירה בהתאם למצב הפעילות
+        const stopButton = document.getElementById("stopListening");
+        if (machineDetails.active) {
+            stopButton.style.display = "block";
+        } else {
+            stopButton.style.display = "none";
+        }
+        
+        // עדכון פעילות המחשב הנוכחי רק אם המחשב פעיל ויש תאריכים מוגדרים
+        if (machineDetails.active && currentStartDate && currentEndDate) {
+            // אם המחשב פעיל, נעדכן את נתוני ההקשות
+            LoadComputerActivity(currentMachineId, currentStartDate, currentEndDate);
+        }
+    } catch (error) {
+        console.error("Error updating machine status:", error);
     }
 }
 
@@ -238,11 +289,19 @@ const closePopupBtn = document.getElementById("closePopup");
 function closePopup() {
     popup.style.display = "none";
     overlay.style.display = "none";
+    isPopupOpen = false;
+    currentMachineId = null;
+    currentStartDate = null;
+    currentEndDate = null;
 
+    // איפוס והחלפת כפתור העצירה
     const stopListeningButton = document.getElementById("stopListening");
     if (stopListeningButton) {
         stopListeningButton.replaceWith(stopListeningButton.cloneNode(true));
     }
+    
+    // הפעלה מחדש של עדכון רשימת המחשבים
+    setupAutoRefresh();
 }
 
 async function openPopup(machineId, ip, name, active) {
@@ -250,13 +309,23 @@ async function openPopup(machineId, ip, name, active) {
     document.getElementById("compIp").textContent = ip;
     document.getElementById("compName").textContent = name;
 
+    // שמירת זיהוי המחשב הנוכחי לעדכונים
+    currentMachineId = machineId;
+    isPopupOpen = true;
+
     let indicator = document.getElementById("indicator");
     if (active === '✅') {
         indicator.classList.add("active");
         indicator.title = "Logging is active.";
+        
+        // הצג את כפתור העצירה
+        document.getElementById("stopListening").style.display = "block";
     } else {
         indicator.classList.remove("active");
         indicator.title = "Logging is not active.";
+        
+        // הסתר את כפתור העצירה
+        document.getElementById("stopListening").style.display = "none";
     }
 
     popup.style.display = "block";
@@ -266,6 +335,10 @@ async function openPopup(machineId, ip, name, active) {
     document.getElementById("startDate").value = today;
     document.getElementById("endDate").value = today;
 
+    // שמירת התאריכים הנוכחיים לעדכונים
+    currentStartDate = formatDateToDDMMYYYY(today);
+    currentEndDate = formatDateToDDMMYYYY(today);
+
     LoadComputerActivity(machineId, formatDateToDDMMYYYY(today), formatDateToDDMMYYYY(today));
 
     const stopListeningButton = document.getElementById("stopListening");
@@ -274,6 +347,42 @@ async function openPopup(machineId, ip, name, active) {
     document.getElementById("stopListening").addEventListener("click", function() {
         const currentMachineId = document.getElementById("compId").textContent;
         StopListening(currentMachineId);
+    });
+    
+    // עדכון מערכת העדכון האוטומטי
+    setupAutoRefresh();
+}
+
+// פונקציה להגדרת העדכון האוטומטי בהתאם למצב הממשק
+function setupAutoRefresh() {
+    // ניקוי הטיימר הקיים
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+    }
+    
+    // הגדרת הטיימר החדש בהתאם למצב
+    if (isPopupOpen) {
+        // אם יש פופאפ פתוח, עדכן את מצב המחשב ואת הנתונים שלו
+        autoRefreshInterval = setInterval(() => {
+            updateMachineStatus();
+        }, 5000); // עדכון כל 5 שניות
+    } else {
+        // אם אין פופאפ פתוח, עדכן את רשימת המחשבים
+        autoRefreshInterval = setInterval(() => {
+            fetchLogs();
+        }, 5000); // עדכון כל 5 שניות
+    }
+}
+
+// פונקציה חדשה להוספת מאזיני לחיצה לשורות הטבלה
+function addRowClickListeners() {
+    const rows = document.querySelectorAll("#ComputersTableBody tr");
+    rows.forEach(row => {
+        row.addEventListener("click", function() {
+            let rowData = Array.from(this.children).map(td => td.textContent.trim());
+            openPopup(rowData[0], rowData[1], rowData[2], rowData[3]);
+        });
     });
 }
 
@@ -294,8 +403,8 @@ document.addEventListener("DOMContentLoaded", function() {
         BackToLogin();
     });
     
-    const tableBody = document.getElementById("ComputersTableBody");
-    tableBody.addEventListener("click", function(event) {
+    // החלפת האזנה ישירה באזנה דלגציה (event delegation)
+    document.getElementById("ComputersTable").addEventListener("click", function(event) {
         let row = event.target.closest("tr");
         if (!row) return;
 
@@ -307,7 +416,14 @@ document.addEventListener("DOMContentLoaded", function() {
         let machineId = document.getElementById("compId").textContent;
         let startDate = document.getElementById("startDate").value;
         let endDate = document.getElementById("endDate").value;
+        
+        // עדכון התאריכים הנוכחיים לעדכונים
+        currentStartDate = formatDateToDDMMYYYY(startDate);
+        currentEndDate = formatDateToDDMMYYYY(endDate);
 
         LoadComputerActivity(machineId, formatDateToDDMMYYYY(startDate), formatDateToDDMMYYYY(endDate));
     });
+    
+    // הפעלת מערכת העדכון האוטומטי בטעינת הדף
+    setupAutoRefresh();
 });
