@@ -1,11 +1,11 @@
 import time, ctypes, locale, tempfile
 from pathlib import Path
 
-foreign_keys = []
+# foreign_keys = []
 
 
 # returns the keyboard language of the current thread
-def get_keyboard_language():
+def get_keyboard_language()->str:
     try:
         user32 = ctypes.WinDLL('user32', use_last_error=True)
         hwnd = user32.GetForegroundWindow()
@@ -26,7 +26,7 @@ def get_keyboard_language():
 
 
 # returns the language of the key
-def get_key_language(one_key):
+def get_key_language(one_key:str)->str:
     try:
         if '\u0590' <= one_key <= '\u05FF':
             return "he_IL"
@@ -37,7 +37,7 @@ def get_key_language(one_key):
 
 
 # replace the key language with the second language, only between English and Hebrew
-def format_language(one_key, old_l, new_l):
+def format_language(one_key:str, old_l:str, new_l:str):
     en_keyboard = (
     "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "a", "s", "d", "f", "g", "h", "j", "k", "l", ";", "'", "z", "x",
     "c", "v", "b", "n", "m", ",", ".", "/")
@@ -60,8 +60,8 @@ def format_language(one_key, old_l, new_l):
 
 
 # return formated key with current language
-def format_key(key):
-    global foreign_keys
+def format_key(key:str)->str:
+    # global foreign_keys
     number_keyboard = ("<96>", "<97>", "<98>", "<99>", "<100>", "<101>", "<102>", "<103>", "<104>", "<105>")
     foreign_keyboard = {
         "<110>": '.',
@@ -81,7 +81,7 @@ def format_key(key):
     elif key1 in foreign_keyboard:
         return foreign_keyboard[key1]
     elif key1.startswith('Key') or key1.startswith('\\x'):
-        foreign_keys.append(key1)
+        # foreign_keys.append(key1)
         return ''
     else:
         key_l = get_key_language(key1)
@@ -92,7 +92,7 @@ def format_key(key):
             return format_language(key1, key_l, keyboard_l)
 
 
-def get_file_path(filename="data.json"):
+def get_file_path(filename="data.json")->str:
     temp_dir = Path(tempfile.gettempdir())
     json_file_path = rf"{temp_dir}\{filename}"
     return json_file_path

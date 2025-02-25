@@ -8,7 +8,7 @@ URL = config['general']['base_url']
 
 
 
-def create_logger():
+def create_logger()->bool:
     host_name = socket.gethostname()
     ip_address = socket.gethostbyname(host_name)
     mac_address = hex(uuid.getnode())

