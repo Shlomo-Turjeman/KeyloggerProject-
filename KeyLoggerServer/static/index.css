@@ -308,3 +308,33 @@ table th {
     max-height: 300px;
     overflow-y: auto;
 }
+
+.cell-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+/* סגנון כפתור המחיקה */
+.delete-button {
+    background: none;
+    border: none;
+    color: #d11a2a;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 5px;
+    visibility: hidden;
+    text-align: right;
+    flex-grow: 1;
+    max-width: 32px;
+}
+
+.delete-button:hover {
+    background-color: #f8d7da;
+    border-radius: 4px;
+}
+
+/* הסתרת הכפתור כברירת מחדל והצגתו בריחוף */
+#ComputersTable tr:hover .delete-button {
+    visibility: visible;
+}
