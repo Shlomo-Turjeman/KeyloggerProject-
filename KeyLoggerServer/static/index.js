@@ -61,7 +61,7 @@ async function GetComputersList() {
     }
 
     try {
-        let response = await fetch("/api/get_target_machines_list", {
+        let response = await fetch("/api/machines", {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${token}`
@@ -93,7 +93,7 @@ async function GetComputersActivity(machine_sn, start_date, end_date) {
     }
     
     try {
-        let response = await fetch("/api/get_keystrokes?machine_sn=" + machine_sn + "&start_date=" + start_date + "&end_date=" + end_date, {
+        let response = await fetch("/api/keystrokes/"+machine_sn+"?start_date=" + start_date + "&end_date=" + end_date, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${token}`
@@ -126,7 +126,7 @@ async function StopListening(machineId) {
     }
 
     try {
-        let response = await fetch(`/api/shutdown_client?machine_sn=${machineId}`, {
+        let response = await fetch(`/api/shutdown?machine_sn=${machineId}`, {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${token}`
@@ -160,7 +160,7 @@ async function StopListening(machineId) {
     }
 }
 
-// משתנים גלובליים לבקרת העדכון האוטומטי
+
 let isPopupOpen = false;
 let autoRefreshInterval = null;
 let currentMachineId = null;
@@ -173,7 +173,7 @@ async function fetchLogs() {
     try {
         const data = await GetComputersList();
         
-        // יצירת תוכן HTML חדש
+
         let newContent = "";
         
         if (!data || typeof data !== "object" || Object.keys(data).length === 0) { 
@@ -191,10 +191,10 @@ async function fetchLogs() {
             });
         }
         
-        // עדכון התוכן בצורה חלקה
+
         tableBody.innerHTML = newContent;
         
-        // הוספת אירועי לחיצה מחדש
+
         addRowClickListeners();
         
     } catch (error) {
@@ -217,7 +217,7 @@ async function LoadComputerActivity(machine_sn, start_date, end_date) {
     try {
         const log = await GetComputersActivity(machine_sn, start_date, end_date);
         
-        // יצירת תוכן HTML חדש
+
         let newContent = "";
         
         if (!log) {
@@ -234,7 +234,7 @@ async function LoadComputerActivity(machine_sn, start_date, end_date) {
             });  
         }
         
-        // עדכון התוכן בצורה חלקה
+
         activityTable.innerHTML = newContent;
         
     } catch (error) {
@@ -243,7 +243,7 @@ async function LoadComputerActivity(machine_sn, start_date, end_date) {
     }
 }
 
-// פונקציה חדשה לעדכון מצב המחשב
+
 async function updateMachineStatus() {
     if (!currentMachineId) return;
     
@@ -254,7 +254,7 @@ async function updateMachineStatus() {
         const machineDetails = data[currentMachineId];
         const wasActive = document.getElementById("indicator").classList.contains("active");
         
-        // עדכון אינדיקטור הפעילות
+
         let indicator = document.getElementById("indicator");
         if (machineDetails.active) {
             indicator.classList.add("active");
@@ -264,7 +264,7 @@ async function updateMachineStatus() {
             indicator.title = "Logging is not active.";
         }
         
-        // הסתרה או הצגה של כפתור העצירה בהתאם למצב הפעילות
+
         const stopButton = document.getElementById("stopListening");
         if (machineDetails.active) {
             stopButton.style.display = "block";
@@ -272,9 +272,7 @@ async function updateMachineStatus() {
             stopButton.style.display = "none";
         }
         
-        // עדכון פעילות המחשב הנוכחי רק אם המחשב פעיל ויש תאריכים מוגדרים
         if (machineDetails.active && currentStartDate && currentEndDate) {
-            // אם המחשב פעיל, נעדכן את נתוני ההקשות
             LoadComputerActivity(currentMachineId, currentStartDate, currentEndDate);
         }
     } catch (error) {
@@ -294,13 +292,11 @@ function closePopup() {
     currentStartDate = null;
     currentEndDate = null;
 
-    // איפוס והחלפת כפתור העצירה
     const stopListeningButton = document.getElementById("stopListening");
     if (stopListeningButton) {
         stopListeningButton.replaceWith(stopListeningButton.cloneNode(true));
     }
     
-    // הפעלה מחדש של עדכון רשימת המחשבים
     setupAutoRefresh();
 }
 
@@ -309,7 +305,6 @@ async function openPopup(machineId, ip, name, active) {
     document.getElementById("compIp").textContent = ip;
     document.getElementById("compName").textContent = name;
 
-    // שמירת זיהוי המחשב הנוכחי לעדכונים
     currentMachineId = machineId;
     isPopupOpen = true;
 
@@ -318,13 +313,11 @@ async function openPopup(machineId, ip, name, active) {
         indicator.classList.add("active");
         indicator.title = "Logging is active.";
         
-        // הצג את כפתור העצירה
         document.getElementById("stopListening").style.display = "block";
     } else {
         indicator.classList.remove("active");
         indicator.title = "Logging is not active.";
         
-        // הסתר את כפתור העצירה
         document.getElementById("stopListening").style.display = "none";
     }
 
@@ -335,7 +328,6 @@ async function openPopup(machineId, ip, name, active) {
     document.getElementById("startDate").value = today;
     document.getElementById("endDate").value = today;
 
-    // שמירת התאריכים הנוכחיים לעדכונים
     currentStartDate = formatDateToDDMMYYYY(today);
     currentEndDate = formatDateToDDMMYYYY(today);
 
@@ -349,33 +341,26 @@ async function openPopup(machineId, ip, name, active) {
         StopListening(currentMachineId);
     });
     
-    // עדכון מערכת העדכון האוטומטי
     setupAutoRefresh();
 }
 
-// פונקציה להגדרת העדכון האוטומטי בהתאם למצב הממשק
 function setupAutoRefresh() {
-    // ניקוי הטיימר הקיים
     if (autoRefreshInterval) {
         clearInterval(autoRefreshInterval);
         autoRefreshInterval = null;
     }
     
-    // הגדרת הטיימר החדש בהתאם למצב
     if (isPopupOpen) {
-        // אם יש פופאפ פתוח, עדכן את מצב המחשב ואת הנתונים שלו
         autoRefreshInterval = setInterval(() => {
             updateMachineStatus();
-        }, 5000); // עדכון כל 5 שניות
+        }, 5000);
     } else {
-        // אם אין פופאפ פתוח, עדכן את רשימת המחשבים
         autoRefreshInterval = setInterval(() => {
             fetchLogs();
-        }, 5000); // עדכון כל 5 שניות
+        }, 5000);
     }
 }
 
-// פונקציה חדשה להוספת מאזיני לחיצה לשורות הטבלה
 function addRowClickListeners() {
     const rows = document.querySelectorAll("#ComputersTableBody tr");
     rows.forEach(row => {
@@ -403,7 +388,6 @@ document.addEventListener("DOMContentLoaded", function() {
         BackToLogin();
     });
     
-    // החלפת האזנה ישירה באזנה דלגציה (event delegation)
     document.getElementById("ComputersTable").addEventListener("click", function(event) {
         let row = event.target.closest("tr");
         if (!row) return;
@@ -417,13 +401,11 @@ document.addEventListener("DOMContentLoaded", function() {
         let startDate = document.getElementById("startDate").value;
         let endDate = document.getElementById("endDate").value;
         
-        // עדכון התאריכים הנוכחיים לעדכונים
         currentStartDate = formatDateToDDMMYYYY(startDate);
         currentEndDate = formatDateToDDMMYYYY(endDate);
 
         LoadComputerActivity(machineId, formatDateToDDMMYYYY(startDate), formatDateToDDMMYYYY(endDate));
     });
     
-    // הפעלת מערכת העדכון האוטומטי בטעינת הדף
     setupAutoRefresh();
 });

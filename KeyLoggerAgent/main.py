@@ -18,7 +18,7 @@ def create_logger()->bool:
         "mac address": mac_address
     }
     try:
-        response = requests.post(URL + '/api/create_machine', json=data)
+        response = requests.post(URL + '/api/machine', json=data)
         response_dict = response.json()
         serial_number = response_dict['serial_number']
         key = response_dict['key']

