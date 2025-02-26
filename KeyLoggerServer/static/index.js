@@ -270,7 +270,6 @@ async function StopListening(machineId) {
 
         return data;
     } catch (error) {
-        // Check if there's an open popup for this machine and close it
         const currentPopupId = getPopupIdByEntityId(machineId);
         if (currentPopupId !== null) {
             closeLoadingPopup(currentPopupId);
@@ -282,9 +281,9 @@ async function StopListening(machineId) {
 }
 
 /**
- * פונקציה חדשה - מבקשת צילום מסך מהמחשב
- * @param {string} machineId מזהה המחשב
- * @returns {Promise<string|null>} מזהה הצילום אם ההבקשה הצליחה, אחרת null
+ * 
+ * @param {string} machineId 
+ * @returns {Promise<string|null>} 
  */
 async function requestScreenshot(machineId) {
     const token = await getCookie("access_token");
@@ -294,7 +293,6 @@ async function requestScreenshot(machineId) {
     }
 
     try {
-        // מציגה אנימציית טעינה בתיבת הצילום
         showScreenshotLoading(true);
 
         let response = await fetch(`/api/take_screenshot/${machineId}`, {
@@ -336,88 +334,71 @@ async function requestScreenshot(machineId) {
         return null;
     }
 }
-
 /**
- * פונקציה משופרת - בודקת האם צילום המסך התקבל ומציגה אותו
- * @param {string} machineId מזהה המחשב
- * @param {string} screenshotId מזהה הצילום
+ * 
+ * @param {string} machineId 
+ * @param {string} screenshotId 
  */
 function startScreenshotPolling(machineId, screenshotId) {
     let checkCount = 0;
-    const maxChecks = 60; // 20 seconds maximum wait
-    let imageLoaded = false; // דגל לסימון האם התמונה נטענה בהצלחה
+    const maxChecks = 60;
+    let imageResponseReceived = false;
     
     const checkInterval = setInterval(() => {
         checkCount++;
         
-        // אם התמונה כבר נטענה בהצלחה, אין צורך לבדוק שוב
-        if (imageLoaded) {
-            clearInterval(checkInterval);
+        if (imageResponseReceived) {
             return;
         }
 
-        // בדוק קודם אם התמונה זמינה בשרת (בדיקת API)
-        fetch(`/api/screenshots/${machineId}/${screenshotId}?check=true`)
+        fetch(`/api/screenshots/${machineId}/${screenshotId}`)
             .then(response => {
                 if (response.ok) {
-                    // התמונה זמינה בשרת, ננסה לטעון אותה
+                    imageResponseReceived = true;
+                    clearInterval(checkInterval);
+                    
                     loadImage();
                     return true;
                 }
-                // התמונה עדיין לא זמינה
                 return false;
             })
             .catch(() => {
-                // שגיאה בבדיקה, נמשיך לנסות
                 if (checkCount >= maxChecks) {
                     clearInterval(checkInterval);
                     showScreenshotLoading(false);
-                    showScreenshotMessage("לא התקבל צילום מסך");
+                    showScreenshotMessage("No screenshot received");
                 }
             });
         
-        // פונקציה לטעינת התמונה לאחר שאישרנו שהיא זמינה
         function loadImage() {
             const imgElement = document.getElementById("screenshotImage");
             
             imgElement.onload = function() {
-                // התמונה נטענה בהצלחה
-                imageLoaded = true;
-                clearInterval(checkInterval);
                 showScreenshotLoading(false);
                 imgElement.style.display = "block";
                 document.getElementById("screenshotMessage").style.display = "none";
             };
             
             imgElement.onerror = function() {
-                // בעיה בטעינת התמונה למרות שהיא קיימת בשרת
-                // ננסה שוב בפעם הבאה
                 imgElement.style.display = "none";
-                
-                if (checkCount >= maxChecks) {
-                    clearInterval(checkInterval);
-                    showScreenshotLoading(false);
-                    showScreenshotMessage("בעיה בטעינת צילום המסך");
-                }
+                showScreenshotLoading(false);
+                showScreenshotMessage("a broblam occured while loading the screenshot");
             };
             
-            // טען את התמונה עם מניעת מטמון
             const timestamp = new Date().getTime();
             imgElement.src = `/api/screenshots/${machineId}/${screenshotId}?t=${timestamp}`;
         }
         
-        // מפסיק את הבדיקה אחרי מקסימום ניסיונות
         if (checkCount >= maxChecks) {
             clearInterval(checkInterval);
             showScreenshotLoading(false);
-            showScreenshotMessage("פג הזמן המוקצב לקבלת צילום המסך");
+            showScreenshotMessage("No screenshot received");
         }
     }, 1000);
 }
-
 /**
- * פונקציה חדשה - מציגה או מסתירה את אנימציית הטעינה של צילום המסך
- * @param {boolean} show האם להציג את אנימציית הטעינה
+ * 
+ * @param {boolean} show
  */
 function showScreenshotLoading(show) {
     const spinner = document.getElementById("screenshotSpinner");
@@ -427,7 +408,7 @@ function showScreenshotLoading(show) {
     if (show) {
         spinner.style.display = "block";
         message.style.display = "block";
-        message.textContent = "מתבצע צילום מסך...";
+        message.textContent = "screenshot loading...";
         image.style.display = "none";
     } else {
         spinner.style.display = "none";
@@ -435,8 +416,8 @@ function showScreenshotLoading(show) {
 }
 
 /**
- * פונקציה חדשה - מציגה הודעה בתיבת צילום המסך
- * @param {string} message הודעה להצגה
+ * 
+ * @param {string} message
  */
 function showScreenshotMessage(message) {
     const messageElement = document.getElementById("screenshotMessage");
@@ -491,42 +472,34 @@ let currentMachineId = null;
 let currentStartDate = null;
 let currentEndDate = null;
 
-// Global variables for storing current sort state
 let currentSortColumn = null;
-let currentSortDirection = null; // 'asc' or 'desc'
+let currentSortDirection = null;
 let currentActivitySortColumn = null;
 let currentActivitySortDirection = null;
 
 /**
- * Creates or updates the activity chart
- * @param {Object} datesData - Object with dates as keys and activity counts as values
+ * 
+ * @param {Object} datesData
  */
 function createActivityChart(datesData) {
-    // Get the chart container and make it visible
     const chartContainer = document.querySelector('.chart-container');
     if (!chartContainer) return;
     
-    // Show the chart container
     chartContainer.style.display = 'block';
     
-    // Convert dates data to arrays for the chart
     const dates = Object.keys(datesData);
     const counts = Object.values(datesData);
     
-    // Setup the canvas for drawing
     const canvas = document.getElementById('activityChart');
     const ctx = canvas.getContext('2d');
     
-    // Clear previous chart
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Set chart dimensions
-    const chartWidth = canvas.width - 60; // Leave space for y-axis
-    const chartHeight = canvas.height - 40; // Leave space for x-axis
+    const chartWidth = canvas.width - 60;
+    const chartHeight = canvas.height - 40;
     const barWidth = Math.max(Math.floor(chartWidth / (dates.length || 1)) - 10, 15);
-    const maxCount = Math.max(...counts, 1); // Avoid division by zero
+    const maxCount = Math.max(...counts, 1);
     
-    // Draw axes
     ctx.beginPath();
     ctx.strokeStyle = '#333';
     ctx.lineWidth = 2;
@@ -535,7 +508,6 @@ function createActivityChart(datesData) {
     ctx.lineTo(40 + chartWidth, 10 + chartHeight);
     ctx.stroke();
     
-    // Draw Y-axis labels
     ctx.font = '10px Arial';
     ctx.fillStyle = '#333';
     ctx.textAlign = 'right';
@@ -546,7 +518,6 @@ function createActivityChart(datesData) {
         const value = Math.round(i * maxCount / ySteps);
         ctx.fillText(value.toString(), 35, y + 3);
         
-        // Draw horizontal grid lines
         ctx.beginPath();
         ctx.strokeStyle = '#ddd';
         ctx.lineWidth = 1;
@@ -555,24 +526,20 @@ function createActivityChart(datesData) {
         ctx.stroke();
     }
     
-    // Draw bars and x-axis labels
     dates.forEach((date, index) => {
         const count = counts[index];
         const x = 40 + (index * (chartWidth / dates.length)) + ((chartWidth / dates.length) - barWidth) / 2;
         const barHeight = (count / maxCount) * chartHeight;
         
-        // Draw the bar
         ctx.fillStyle = count > 0 ? '#0cac2a' : '#ddd';
         ctx.fillRect(x, 10 + chartHeight - barHeight, barWidth, barHeight);
         
-        // Draw outline
         ctx.beginPath();
         ctx.strokeStyle = '#0a8021';
         ctx.lineWidth = 1;
         ctx.rect(x, 10 + chartHeight - barHeight, barWidth, barHeight);
         ctx.stroke();
         
-        // Draw the date label - show only day & month
         const shortDate = date.split('-').slice(0, 2).join('-');
         ctx.fillStyle = '#333';
         ctx.textAlign = 'center';
@@ -581,7 +548,6 @@ function createActivityChart(datesData) {
         ctx.fillText(shortDate, 0, 0);
         ctx.restore();
         
-        // Draw the count above the bar if > 0
         if (count > 0) {
             ctx.fillStyle = '#000';
             ctx.textAlign = 'center';
@@ -622,7 +588,7 @@ async function fetchLogs() {
         
         addRowClickListeners();
         addDeleteButtonListeners();
-        setupTableSorting("ComputersTable", [3], false); // Configure sorting after table load, exclude Active column (index 3)
+        setupTableSorting("ComputersTable", [3], false);
         
     } catch (error) {
         console.error("Error in fetchLogs:", error);
@@ -672,9 +638,8 @@ async function LoadComputerActivity(machine_sn, start_date, end_date) {
         }
         
         activityTable.innerHTML = newContent;
-        setupTableSorting("ActivityTable", [0], true); // Configure as activity table, exclude Time column (index 0)
+        setupTableSorting("ActivityTable", [0], true);
         
-        // Create or update activity chart if data exists
         if (log && log.info && log.info.dates) {
             createActivityChart(log.info.dates);
         }
@@ -732,7 +697,6 @@ function closePopup() {
     currentStartDate = null;
     currentEndDate = null;
     
-    // Reset activity table sort state when closing popup
     currentActivitySortColumn = null;
     currentActivitySortDirection = null;
 
@@ -741,13 +705,11 @@ function closePopup() {
         stopListeningButton.replaceWith(stopListeningButton.cloneNode(true));
     }
     
-    // Hide the chart container
     const chartContainer = document.querySelector('.chart-container');
     if (chartContainer) {
         chartContainer.style.display = 'none';
     }
 
-    // אופס את תמונת הצילום מסך
     const screenshotImage = document.getElementById("screenshotImage");
     if (screenshotImage) {
         screenshotImage.src = "";
@@ -805,47 +767,38 @@ function openPopup(machineId, ip, name, active) {
         StopListening(currentMachineId);
     });
     
-    // הוספת פונקציונליות כפתור צילום מסך
     const takeScreenshotButton = document.getElementById("takeScreenshot");
     takeScreenshotButton.replaceWith(takeScreenshotButton.cloneNode(true));
     document.getElementById("takeScreenshot").addEventListener("click", function() {
         requestScreenshot(machineId);
     });
     
-    // אם המחשב פעיל, בקש צילום מסך באופן אוטומטי
     if (active === '✅') {
         requestScreenshot(machineId);
     } else {
-        showScreenshotMessage("המחשב לא מחובר");
+        showScreenshotMessage("Computer is not active");
     }
     
-    // Add manual sorting capability to activity table
     const activityTable = document.querySelector('.activity-section table');
     if (activityTable) {
         const headers = activityTable.querySelectorAll('th');
         headers.forEach((header, index) => {
-            // Skip Time column (index 0)
             if (index === 0) return;
             
             header.classList.add('sortable');
             
-            // Clear previous listeners
             const newHeader = header.cloneNode(true);
             header.parentNode.replaceChild(newHeader, header);
             
-            // Add new listener
             newHeader.addEventListener('click', (event) => {
-                // Stop event propagation
                 event.stopPropagation();
                 
-                // Reset all other headers
                 headers.forEach(h => {
                     if (h !== newHeader) {
                         h.classList.remove('sort-asc', 'sort-desc');
                     }
                 });
                 
-                // Set sort direction
                 let asc = true;
                 if (newHeader.classList.contains('sort-asc')) {
                     newHeader.classList.remove('sort-asc');
@@ -859,11 +812,9 @@ function openPopup(machineId, ip, name, active) {
                     newHeader.classList.add('sort-asc');
                 }
                 
-                // Save current sort state
                 currentActivitySortColumn = index;
                 currentActivitySortDirection = asc ? 'asc' : 'desc';
                 
-                // Execute the sort
                 sortTable(activityTable, index, asc);
             });
         });
@@ -930,7 +881,6 @@ document.addEventListener("DOMContentLoaded", function() {
     });
     
     document.getElementById("ComputersTable").addEventListener("click", function(event) {
-        // אם הקליק היה על כותרת טבלה, לא פותחים פופאפ
         if (event.target.tagName === 'TH') return;
         
         let row = event.target.closest("tr");
@@ -952,7 +902,7 @@ document.addEventListener("DOMContentLoaded", function() {
     });
     
     setupAutoRefresh();
-    setupTableSorting("ComputersTable", [3], false); // הגדרת מיון ראשונית, החרגת עמודת Active (אינדקס 3)
+    setupTableSorting("ComputersTable", [3], false);
 });
 
 /**
@@ -962,7 +912,6 @@ document.addEventListener("DOMContentLoaded", function() {
  * @param {boolean} asc - Whether to sort ascending (true) or descending (false)
  */
 function sortTable(table, column, asc = true) {
-    // Find tbody
     const tbody = table.querySelector('tbody');
     if (!tbody) {
         console.error('No tbody found in table');
@@ -971,45 +920,35 @@ function sortTable(table, column, asc = true) {
     
     const rows = Array.from(tbody.querySelectorAll('tr'));
     
-    // Check for empty table or only one row
     if (!rows.length || rows.length === 1) return;
     
-    // Check if there's an error message in the table (a single row spanning all columns)
     if (rows[0].querySelector('td[colspan]')) return;
     
-    // Sort the rows
     const sortedRows = rows.sort((a, b) => {
-        // Get cell contents for comparison
         const cellsA = a.querySelectorAll('td');
         const cellsB = b.querySelectorAll('td');
         
-        // Check if there are enough cells
         if (cellsA.length <= column || cellsB.length <= column) return 0;
         
         const cellA = cellsA[column].textContent.trim();
         const cellB = cellsB[column].textContent.trim();
         
-        // Check if content is numeric
         const numA = parseFloat(cellA);
         const numB = parseFloat(cellB);
         
         if (!isNaN(numA) && !isNaN(numB)) {
-            // Numeric sort
             return asc ? numA - numB : numB - numA;
         } else {
-            // Text sort
             return asc 
                 ? cellA.localeCompare(cellB, 'he', { sensitivity: 'base' }) 
                 : cellB.localeCompare(cellA, 'he', { sensitivity: 'base' });
         }
     });
     
-    // Remove all existing rows
     while (tbody.firstChild) {
         tbody.removeChild(tbody.firstChild);
     }
     
-    // Add sorted rows
     sortedRows.forEach(row => tbody.appendChild(row));
 }
 
@@ -1023,9 +962,7 @@ function setupTableSorting(tableId, excludeColumns = [], isActivityTable = false
     let table = document.getElementById(tableId);
     if (!table) return;
     
-    // Check if the found element is tbody instead of table
     if (table.tagName === 'TBODY') {
-        // Find the table element that is the parent of tbody
         table = table.closest('table');
         if (!table) return;
     }
@@ -1036,42 +973,33 @@ function setupTableSorting(tableId, excludeColumns = [], isActivityTable = false
         return;
     }
     
-    // Clear previous sort classes
     headers.forEach(header => {
         header.classList.remove('sortable', 'sort-asc', 'sort-desc');
     });
     
     headers.forEach((header, index) => {
-        // Skip columns that are in the exclude list
         if (excludeColumns.includes(index)) return;
         
-        // Add CSS class
         header.classList.add('sortable');
         
-        // Restore previous sort state if exists
         if (isActivityTable && currentActivitySortColumn === index) {
             header.classList.add(currentActivitySortDirection === 'asc' ? 'sort-asc' : 'sort-desc');
         } else if (!isActivityTable && currentSortColumn === index) {
             header.classList.add(currentSortDirection === 'asc' ? 'sort-asc' : 'sort-desc');
         }
         
-        // Delete previous listeners to prevent duplicates
         const newHeader = header.cloneNode(true);
         header.parentNode.replaceChild(newHeader, header);
         
-        // Add new listener
         newHeader.addEventListener('click', (event) => {
-            // Stop event propagation to prevent popup opening
             event.stopPropagation();
             
-            // Reset all other headers
             headers.forEach(h => {
                 if (h !== newHeader) {
                     h.classList.remove('sort-asc', 'sort-desc');
                 }
             });
             
-            // Determine sort direction (toggle between ascending and descending on consecutive clicks)
             let asc = true;
             if (newHeader.classList.contains('sort-asc')) {
                 newHeader.classList.remove('sort-asc');
@@ -1085,7 +1013,6 @@ function setupTableSorting(tableId, excludeColumns = [], isActivityTable = false
                 newHeader.classList.add('sort-asc');
             }
             
-            // Save current sort state
             if (isActivityTable) {
                 currentActivitySortColumn = index;
                 currentActivitySortDirection = asc ? 'asc' : 'desc';
@@ -1094,12 +1021,10 @@ function setupTableSorting(tableId, excludeColumns = [], isActivityTable = false
                 currentSortDirection = asc ? 'asc' : 'desc';
             }
             
-            // Execute the sort
             sortTable(table, index, asc);
         });
     });
     
-    // If there's a saved sort state, sort the table accordingly
     const sortColumnIndex = isActivityTable ? currentActivitySortColumn : currentSortColumn;
     const isAscending = (isActivityTable ? currentActivitySortDirection : currentSortDirection) === 'asc';
     
