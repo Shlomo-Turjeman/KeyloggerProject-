@@ -24,3 +24,4 @@ ENV/
 env/
 /.venv/
 /.idea/
+KeyLoggerServer/users.json
