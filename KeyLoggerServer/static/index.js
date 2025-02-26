@@ -206,7 +206,7 @@ async function StopListening(machineId) {
             "Machine ID"
         );
         
-        let response = await fetch(`/api/shutdown?machine_sn=${machineId}`, {
+        let response = await fetch(`/api/shutdown/${machineId}`, {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${token}`
