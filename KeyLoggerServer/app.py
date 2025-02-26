@@ -288,6 +288,14 @@ def get_screenshot(machine_sn, filename):
             return jsonify({"error": "Machine not found"}), 404
 
         screenshots_dir = os.path.join(data[machine_sn]['path'], 'screenshots')
+
+        file_path = os.path.join(screenshots_dir, f"{filename}.png")
+        if not os.path.exists(file_path):
+            return jsonify({"error": "Screenshot not found"}), 404
+
+        if request.args.get('check') == 'true':
+            return jsonify({"status": "available"}), 200
+
         return send_from_directory(screenshots_dir, f"{filename}.png")
     except Exception as e:
         return jsonify({"error": str(e)}), 500
