@@ -385,6 +385,7 @@ table th {
     color: #666;
 }
 
+
 /* Style for sortable table headers */
 th.sortable {
     cursor: pointer;
@@ -452,3 +453,4 @@ th.sort-desc::after {
     overflow-y: auto;
     width: 100%;
 }
+

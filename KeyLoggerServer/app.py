@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify,make_response,render_template
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, JWTManager
-import os, random,string,datetime, json,time
+import os, random,string,datetime, json,time,shutil
 from utils import merge_dicts,decrypt,generate_log_filename,get_date_list,group_log_data
 from dotenv import load_dotenv
 
@@ -74,10 +74,14 @@ def create_machine():
         data_dict = {}
 
     serial_number = int(max(data_dict.keys(), default=1000)) + 1
+    folder_path = f'logs/machine_{serial_number}'
 
-    data_dict[serial_number] = {'mac address': mac_address, 'host name': host_name, 'ip': ip, 'path': f'logs/machine_{serial_number}',"key":key}
+    data_dict[serial_number] = {'mac address': mac_address, 'host name': host_name, 'ip': ip, 'path': folder_path,"key":key}
     with open(data_path, 'w', encoding='utf-8') as file:
         json.dump(data_dict, file, ensure_ascii=False, indent=4)
+
+    if os.path.exists(folder_path) and os.path.isdir(folder_path):
+        shutil.rmtree(folder_path)
 
     return jsonify({"serial_number": serial_number,"key":key}), 201
 
