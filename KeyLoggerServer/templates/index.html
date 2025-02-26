@@ -51,7 +51,7 @@
 
 
         <section class="ComputerActivity" id="ComputerActivity">
-            <button id="closePopup" aria-label="סגור">×</button>
+            <button id="closePopup" aria-label="Close">×</button>
             <h2>Computer Activity</h2>
         
             <div class="popup-content">
@@ -75,19 +75,29 @@
                         <button id="updateActivity">🔄️</button>
                     </div>  
 
-                    <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Time</th>
-                                <th>Window</th>
-                                <th>Text</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ActivityTable">
-                            <!-- נתונים ייכנסו כאן -->
-                        </tbody>
-                    </table>
+                    <!-- Activity Table Section -->
+                    <div class="data-container">
+                        <div class="container-title">Activity Log</div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Window</th>
+                                        <th>Text</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ActivityTable">
+                                    <!-- Data will be inserted here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Activity Chart Section -->
+                    <div class="chart-container" style="display: none;">
+                        <div class="chart-title">Activity by Date</div>
+                        <canvas id="activityChart" width="700" height="200"></canvas>
                     </div>
                 </div>
             </div>
@@ -95,6 +105,7 @@
         
   
     </main>
+    
     <script src="{{ url_for('static', filename='index.js') }}"></script>
 </body>
 </html>
