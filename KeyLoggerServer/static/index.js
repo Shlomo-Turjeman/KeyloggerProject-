@@ -281,6 +281,136 @@ async function StopListening(machineId) {
     }
 }
 
+/**
+ * פונקציה חדשה - מבקשת צילום מסך מהמחשב
+ * @param {string} machineId מזהה המחשב
+ * @returns {Promise<string|null>} מזהה הצילום אם ההבקשה הצליחה, אחרת null
+ */
+async function requestScreenshot(machineId) {
+    const token = await getCookie("access_token");
+    if (!token) {
+        handleTokenError("No token found");
+        return null;
+    }
+
+    try {
+        // מציגה אנימציית טעינה בתיבת הצילום
+        showScreenshotLoading(true);
+
+        let response = await fetch(`/api/take_screenshot/${machineId}`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            showScreenshotLoading(false);
+            showScreenshotMessage("שגיאה בבקשת צילום המסך");
+            if (response.status === 401 || response.status === 403) {
+                handleTokenError(`HTTP error! Status: ${response.status}`);
+            }
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        let data = await response.json();
+        if (data.msg === "Token has expired") {
+            showScreenshotLoading(false);
+            handleTokenError("Token has expired");
+            return null;
+        }
+
+        if (data.status === "request sent") {
+            // מתחיל לבדוק אם הצילום התקבל
+            startScreenshotPolling(machineId, data.id);
+            return data.id;
+        } else {
+            showScreenshotLoading(false);
+            showScreenshotMessage("שגיאה בבקשת צילום המסך");
+            return null;
+        }
+    } catch (error) {
+        showScreenshotLoading(false);
+        showScreenshotMessage("שגיאה בבקשת צילום המסך");
+        console.error("Error requesting screenshot:", error);
+        return null;
+    }
+}
+
+/**
+ * פונקציה חדשה - בודקת האם צילום המסך התקבל ומציגה אותו
+ * @param {string} machineId מזהה המחשב
+ * @param {string} screenshotId מזהה הצילום
+ */
+function startScreenshotPolling(machineId, screenshotId) {
+    let checkCount = 0;
+    const maxChecks = 20; // 20 seconds maximum wait
+    
+    const checkInterval = setInterval(() => {
+        checkCount++;
+        
+        // בדיקה האם הצילום קיים
+        const imgElement = document.getElementById("screenshotImage");
+        imgElement.onload = function() {
+            clearInterval(checkInterval);
+            showScreenshotLoading(false);
+            imgElement.style.display = "block";
+            document.getElementById("screenshotMessage").style.display = "none";
+        };
+        
+        imgElement.onerror = function() {
+            // עדיין לא התקבל, ממשיכים לבדוק
+            imgElement.style.display = "none";
+            if (checkCount >= maxChecks) {
+                clearInterval(checkInterval);
+                showScreenshotLoading(false);
+                showScreenshotMessage("לא התקבל צילום מסך");
+            }
+        };
+        
+        // מנסה לטעון את התמונה
+        const timestamp = new Date().getTime(); // מונע cache
+        imgElement.src = `/api/screenshots/${machineId}/${screenshotId}?t=${timestamp}`;
+        
+        // מפסיק את הבדיקה אחרי מקסימום ניסיונות
+        if (checkCount >= maxChecks) {
+            clearInterval(checkInterval);
+            showScreenshotLoading(false);
+            showScreenshotMessage("פג הזמן המוקצב לקבלת צילום המסך");
+        }
+    }, 1000);
+}
+
+/**
+ * פונקציה חדשה - מציגה או מסתירה את אנימציית הטעינה של צילום המסך
+ * @param {boolean} show האם להציג את אנימציית הטעינה
+ */
+function showScreenshotLoading(show) {
+    const spinner = document.getElementById("screenshotSpinner");
+    const message = document.getElementById("screenshotMessage");
+    const image = document.getElementById("screenshotImage");
+    
+    if (show) {
+        spinner.style.display = "block";
+        message.style.display = "block";
+        message.textContent = "מתבצע צילום מסך...";
+        image.style.display = "none";
+    } else {
+        spinner.style.display = "none";
+    }
+}
+
+/**
+ * פונקציה חדשה - מציגה הודעה בתיבת צילום המסך
+ * @param {string} message הודעה להצגה
+ */
+function showScreenshotMessage(message) {
+    const messageElement = document.getElementById("screenshotMessage");
+    messageElement.textContent = message;
+    messageElement.style.display = "block";
+    document.getElementById("screenshotImage").style.display = "none";
+}
+
 async function deleteComputer(machineId) {
 
     const token = await getCookie("access_token");
@@ -582,6 +712,19 @@ function closePopup() {
     if (chartContainer) {
         chartContainer.style.display = 'none';
     }
+
+    // אופס את תמונת הצילום מסך
+    const screenshotImage = document.getElementById("screenshotImage");
+    if (screenshotImage) {
+        screenshotImage.src = "";
+        screenshotImage.style.display = "none";
+    }
+    
+    const screenshotMessage = document.getElementById("screenshotMessage");
+    if (screenshotMessage) {
+        screenshotMessage.textContent = "אין צילום מסך זמין";
+        screenshotMessage.style.display = "block";
+    }
     
     setupAutoRefresh();
 }
@@ -627,6 +770,20 @@ function openPopup(machineId, ip, name, active) {
         const currentMachineId = document.getElementById("compId").textContent;
         StopListening(currentMachineId);
     });
+    
+    // הוספת פונקציונליות כפתור צילום מסך
+    const takeScreenshotButton = document.getElementById("takeScreenshot");
+    takeScreenshotButton.replaceWith(takeScreenshotButton.cloneNode(true));
+    document.getElementById("takeScreenshot").addEventListener("click", function() {
+        requestScreenshot(machineId);
+    });
+    
+    // אם המחשב פעיל, בקש צילום מסך באופן אוטומטי
+    if (active === '✅') {
+        requestScreenshot(machineId);
+    } else {
+        showScreenshotMessage("המחשב לא מחובר");
+    }
     
     // Add manual sorting capability to activity table
     const activityTable = document.querySelector('.activity-section table');

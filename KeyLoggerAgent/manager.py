@@ -79,4 +79,4 @@ class KeyLoggerManager(IKeyLoggerManager):
             return response.status_code == 200
 
         except Exception as e:
-            pass
+            print(e)

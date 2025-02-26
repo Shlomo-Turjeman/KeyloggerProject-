@@ -62,6 +62,17 @@
                     <p><strong>Name:</strong> <span id="compName"></span></p>
                     <div class="recording-indicator" id="indicator"></div>
                     <button id="stopListening" class="close-button">shutdown</button>
+                    
+                    <!-- חלק חדש - תיבת צילום מסך -->
+                    <div class="screenshot-box">
+                        <h3>צילום מסך</h3>
+                        <div class="screenshot-container">
+                            <div class="screenshot-spinner" id="screenshotSpinner"></div>
+                            <img id="screenshotImage" src="" alt="צילום מסך" style="display: none;">
+                            <div id="screenshotMessage" class="screenshot-message">אין צילום מסך זמין</div>
+                        </div>
+                        <button id="takeScreenshot" class="screenshot-button">צלם מסך חדש</button>
+                    </div>
 
                 </aside>
         
