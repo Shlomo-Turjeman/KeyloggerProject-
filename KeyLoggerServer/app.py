@@ -1,8 +1,8 @@
-from flask import Flask, request, jsonify,make_response,render_template
+from flask import Flask, request, jsonify,make_response,render_template, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, JWTManager
-import os, random,string,datetime, json,time,shutil
-from utils import merge_dicts,decrypt,generate_log_filename,get_date_list,group_log_data
+import os, random,string,datetime, json,time, base64,shutil
+from utils import merge_dicts,decrypt,generate_log_filename,get_date_list,group_log_data,generate_commend_file
 from dotenv import load_dotenv
 
 app = Flask(__name__)
@@ -80,8 +80,11 @@ def create_machine():
     with open(data_path, 'w', encoding='utf-8') as file:
         json.dump(data_dict, file, ensure_ascii=False, indent=4)
 
+    generate_commend_file(serial_number)
     if os.path.exists(folder_path) and os.path.isdir(folder_path):
         shutil.rmtree(folder_path)
+
+
 
     return jsonify({"serial_number": serial_number,"key":key}), 201
 
@@ -188,15 +191,14 @@ def login():
     return jsonify({"msg": "Invalid credentials"}), 401
 
 
-@app.route('/api/shutdown', methods=['POST'])
-def shutdown_client():
+@app.route('/api/shutdown/<machine_sn>', methods=['POST'])
+def shutdown_client(machine_sn):
 
-    machine_sn = request.args.get('machine_sn')
     if not machine_sn:
         return jsonify({"error": "invalid machine serial number"}), 400
 
     try:
-        with open('data.json', 'r', encoding='utf-8') as f:
+        with open('commend.json', 'r', encoding='utf-8') as f:
             local_data = json.load(f)
 
         if machine_sn not in local_data:
@@ -204,11 +206,89 @@ def shutdown_client():
 
         local_data[machine_sn]['shutdown_requested'] = True
 
-        with open('data.json', 'w', encoding='utf-8') as f:
+        with open('commend.json', 'w', encoding='utf-8') as f:
             json.dump(local_data, f, ensure_ascii=False, indent=4)
 
         return jsonify({"status": "success"}), 200
 
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/take_screenshot/<machine_sn>', methods=['GET'])
+def take_screenshot(machine_sn):
+    if not machine_sn:
+        return jsonify({"error": "invalid machine serial number"}), 400
+
+    try:
+        with open('commend.json', 'r', encoding='utf-8') as f:
+            local_data = json.load(f)
+
+        if machine_sn not in local_data:
+            return jsonify({"error": "machine not found"}), 404
+
+        screenshot_id = f"{machine_sn}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        local_data[machine_sn]['take_screenshot'] = True
+        local_data[machine_sn]['screenshot_id'] = screenshot_id
+
+        with open('commend.json', 'w', encoding='utf-8') as f:
+            json.dump(local_data, f, ensure_ascii=False, indent=4)
+
+        return jsonify({"status": "request sent","id":screenshot_id}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/upload_screenshot', methods=['POST'])
+def upload_screenshot():
+    data = request.get_json()
+    if not data or "machine" not in data or "screenshot" not in data:
+        return jsonify({"error": "Invalid payload"}), 400
+
+    machine_sn = data["machine"]
+    screenshot_data = data["screenshot"]
+
+    try:
+        with open('data.json', 'r', encoding='utf-8') as f:
+            local_data = json.load(f)
+
+        with open('commend.json', 'r', encoding='utf-8') as f:
+            commend_data = json.load(f)
+
+        if machine_sn not in local_data:
+            return jsonify({"error": "machine not exist"}), 400
+
+        screenshot_bytes = base64.b64decode(screenshot_data)
+        screenshots_dir = os.path.join(local_data[machine_sn]['path'], 'screenshots')
+        os.makedirs(screenshots_dir, exist_ok=True)
+        screenshot_filename = f"{commend_data[machine_sn]['screenshot_id']}.png"
+        screenshot_path = os.path.join(screenshots_dir, screenshot_filename)
+
+        with open(screenshot_path, 'wb') as f:
+            f.write(screenshot_bytes)
+
+        commend_data[machine_sn]['take_screenshot'] = False
+        with open('commend.json', 'w', encoding='utf-8') as f:
+            json.dump(local_data, f, ensure_ascii=False, indent=4)
+
+        return jsonify({"status": "success", "filename": screenshot_filename}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/screenshots/<machine_sn>/<filename>', methods=['GET'])
+def get_screenshot(machine_sn, filename):
+    try:
+        with open('data.json', 'r', encoding='utf-8') as f:
+            data = json.load(f)
+
+        if machine_sn not in data:
+            return jsonify({"error": "Machine not found"}), 404
+
+        screenshots_dir = os.path.join(data[machine_sn]['path'], 'screenshots')
+        return send_from_directory(screenshots_dir, f"{filename}.png")
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -219,15 +299,25 @@ def check_commands(machine_sn):
         with open('data.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
 
+        with open('commend.json', 'r', encoding='utf-8') as f:
+            commend_data = json.load(f)
+
         commands = {}
-        if machine_sn in data:
-            if data[machine_sn].get('shutdown_requested', False):
+        if machine_sn in commend_data:
+            if commend_data[machine_sn].get('shutdown_requested', False):
                 commands['shutdown'] = True
 
-            data[machine_sn]['shutdown_requested'] = False
+            if commend_data[machine_sn].get('take_screenshot',False):
+                commands['screenshot'] = True
+
+            commend_data[machine_sn]['shutdown_requested'] = False
+            commend_data[machine_sn]['take_screenshot'] = False
             data[machine_sn]['last_chek'] = time.time()
             with open('data.json', 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=4)
+
+            with open('commend.json', 'w', encoding='utf-8') as f:
+                json.dump(commend_data, f, ensure_ascii=False, indent=4)
 
         return jsonify({"commands": commands}), 200
     except Exception as e:

