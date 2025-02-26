@@ -575,7 +575,7 @@ async function fetchLogs() {
                         <td>${details.name}</td>
                         <td>
                             <div class="cell-container">
-                                <span class="text">${details.active ? '✅' : '🟩'}</span>
+                                <span class="text">${details.active ? '✅' : '🟥'}</span>
                                 ${!details.active ? `<button class="delete-button" data-id="${id}">🗑️</button>` : ''}
                             </div>
                         </td>
