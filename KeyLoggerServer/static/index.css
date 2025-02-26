@@ -106,6 +106,9 @@ table th, table td {
     border: 1px solid #ddd;
     text-align: left;
     /* max-height: 5px; */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
 }
 table tr {
     height: 60px;
