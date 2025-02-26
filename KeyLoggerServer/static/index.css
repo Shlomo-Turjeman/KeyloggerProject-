@@ -105,6 +105,10 @@ table th, table td {
     padding: 10px;
     border: 1px solid #ddd;
     text-align: left;
+    /* max-height: 5px; */
+}
+table tr {
+    height: 60px;
 }
 
 table th {
@@ -304,11 +308,6 @@ table th {
 }
 
 
-.table-container {
-    max-height: 300px;
-    overflow-y: auto;
-}
-
 .cell-container {
     display: flex;
     justify-content: space-between;
@@ -384,5 +383,74 @@ table th {
     margin: 10px 0;
     font-size: 14px;
     color: #666;
+}
+
+
+/* Style for sortable table headers */
+th.sortable {
+    cursor: pointer;
+    position: relative;
+    padding-right: 20px; /* Space for arrow */
+}
+
+th.sortable::after {
+    content: "⇅"; /* Sort symbol - up and down arrow */
+    position: absolute;
+    right: 5px;
+    opacity: 0.5;
+}
+
+th.sort-asc::after {
+    content: "↑"; /* Up arrow for ascending sort */
+    opacity: 1;
+}
+
+th.sort-desc::after {
+    content: "↓"; /* Down arrow for descending sort */
+    opacity: 1;
+}
+
+.chart-container {
+    width: 100%;
+    height: auto;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.chart-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    text-align: center;
+    color: #333;
+}
+
+.data-container {
+    width: 100%;
+    max-height: 350px;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.container-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    text-align: center;
+    color: #333;
+}
+
+.table-container {
+    max-height: 300px;
+    overflow-y: auto;
+    width: 100%;
 }
 
