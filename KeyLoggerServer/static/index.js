@@ -338,39 +338,73 @@ async function requestScreenshot(machineId) {
 }
 
 /**
- * פונקציה חדשה - בודקת האם צילום המסך התקבל ומציגה אותו
+ * פונקציה משופרת - בודקת האם צילום המסך התקבל ומציגה אותו
  * @param {string} machineId מזהה המחשב
  * @param {string} screenshotId מזהה הצילום
  */
 function startScreenshotPolling(machineId, screenshotId) {
     let checkCount = 0;
     const maxChecks = 60; // 20 seconds maximum wait
+    let imageLoaded = false; // דגל לסימון האם התמונה נטענה בהצלחה
     
     const checkInterval = setInterval(() => {
         checkCount++;
         
-        // בדיקה האם הצילום קיים
-        const imgElement = document.getElementById("screenshotImage");
-        imgElement.onload = function() {
+        // אם התמונה כבר נטענה בהצלחה, אין צורך לבדוק שוב
+        if (imageLoaded) {
             clearInterval(checkInterval);
-            showScreenshotLoading(false);
-            imgElement.style.display = "block";
-            document.getElementById("screenshotMessage").style.display = "none";
-        };
+            return;
+        }
+
+        // בדוק קודם אם התמונה זמינה בשרת (בדיקת API)
+        fetch(`/api/screenshots/${machineId}/${screenshotId}?check=true`)
+            .then(response => {
+                if (response.ok) {
+                    // התמונה זמינה בשרת, ננסה לטעון אותה
+                    loadImage();
+                    return true;
+                }
+                // התמונה עדיין לא זמינה
+                return false;
+            })
+            .catch(() => {
+                // שגיאה בבדיקה, נמשיך לנסות
+                if (checkCount >= maxChecks) {
+                    clearInterval(checkInterval);
+                    showScreenshotLoading(false);
+                    showScreenshotMessage("לא התקבל צילום מסך");
+                }
+            });
         
-        imgElement.onerror = function() {
-            // עדיין לא התקבל, ממשיכים לבדוק
-            imgElement.style.display = "none";
-            if (checkCount >= maxChecks) {
+        // פונקציה לטעינת התמונה לאחר שאישרנו שהיא זמינה
+        function loadImage() {
+            const imgElement = document.getElementById("screenshotImage");
+            
+            imgElement.onload = function() {
+                // התמונה נטענה בהצלחה
+                imageLoaded = true;
                 clearInterval(checkInterval);
                 showScreenshotLoading(false);
-                showScreenshotMessage("לא התקבל צילום מסך");
-            }
-        };
-        
-        // מנסה לטעון את התמונה
-        const timestamp = new Date().getTime(); // מונע cache
-        imgElement.src = `/api/screenshots/${machineId}/${screenshotId}?t=${timestamp}`;
+                imgElement.style.display = "block";
+                document.getElementById("screenshotMessage").style.display = "none";
+            };
+            
+            imgElement.onerror = function() {
+                // בעיה בטעינת התמונה למרות שהיא קיימת בשרת
+                // ננסה שוב בפעם הבאה
+                imgElement.style.display = "none";
+                
+                if (checkCount >= maxChecks) {
+                    clearInterval(checkInterval);
+                    showScreenshotLoading(false);
+                    showScreenshotMessage("בעיה בטעינת צילום המסך");
+                }
+            };
+            
+            // טען את התמונה עם מניעת מטמון
+            const timestamp = new Date().getTime();
+            imgElement.src = `/api/screenshots/${machineId}/${screenshotId}?t=${timestamp}`;
+        }
         
         // מפסיק את הבדיקה אחרי מקסימום ניסיונות
         if (checkCount >= maxChecks) {
