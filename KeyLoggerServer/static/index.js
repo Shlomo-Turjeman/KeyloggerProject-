@@ -344,7 +344,7 @@ async function requestScreenshot(machineId) {
  */
 function startScreenshotPolling(machineId, screenshotId) {
     let checkCount = 0;
-    const maxChecks = 20; // 20 seconds maximum wait
+    const maxChecks = 60; // 20 seconds maximum wait
     
     const checkInterval = setInterval(() => {
         checkCount++;
