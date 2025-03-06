@@ -331,6 +331,12 @@ def check_commands(machine_sn):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/download',methods=['GET'])
+def download():
+    return send_from_directory('downloads', 'loggeragent.exe', as_attachment=True)
+
+
+
 @app.route('/', methods=['GET'])
 def main():
     return render_template('index.html')

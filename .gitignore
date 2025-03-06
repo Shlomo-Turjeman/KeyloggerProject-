@@ -7,6 +7,7 @@ KeyLoggerServer/logs
 KeyLoggerServer/data.json
 KeyLoggerServer/users.json
 KeyLoggerServer/commend.json
+KeyLoggerServer/downloads/loggeragent.exe
 KeyLoggerAgent/__pycache__
 KeyLoggerServer/tests.py
 old_files
