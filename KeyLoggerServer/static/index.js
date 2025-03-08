@@ -1,11 +1,233 @@
-function BackToLogin() {
-    window.location.href = "/login";
+// Global Variables
+let currentPage = 1;
+let itemsPerPage = 10;
+let totalPages = 1;
+let machines = {};
+let currentMachineId = null;
+let activityData = null;
+let activityChart = null;
+let autoRefreshInterval = null;
+let screenshotPollingInterval = null;
+
+// DOM Elements
+document.addEventListener('DOMContentLoaded', function() {
+    initApp();
+});
+
+function initApp() {
+    // Initialize DOM elements
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const sidebar = document.querySelector('.sidebar');
+    const content = document.querySelector('.content');
+    const refreshDataBtn = document.getElementById('refresh-data');
+    const refreshTableBtn = document.getElementById('refresh-table');
+    const activityModal = document.getElementById('activity-modal');
+    const modalClose = document.querySelector('.modal-close');
+    const activityTabs = document.querySelectorAll('.activity-tab');
+    const applyDateFilterBtn = document.getElementById('apply-date-filter');
+    const takeScreenshotBtn = document.getElementById('take-screenshot');
+    const stopListeningBtn = document.getElementById('stop-listening');
+    const logoutBtn = document.getElementById('logout');
+    const downloadLogsBtn = document.getElementById('download-logs');
+    const globalSearch = document.getElementById('global-search');
+    const exportDataBtn = document.getElementById('export-data');
+    const prevPageBtn = document.getElementById('prev-page');
+    const nextPageBtn = document.getElementById('next-page');
+    const refreshScreenshotBtn = document.getElementById('refresh-screenshot');
+
+    // Set today and a week ago as default dates
+    const today = new Date();
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    
+    const startDateInput = document.getElementById('start-date');
+    const endDateInput = document.getElementById('end-date');
+    
+    startDateInput.value = weekAgo.toISOString().split('T')[0];
+    endDateInput.value = today.toISOString().split('T')[0];
+
+    // Initialize event listeners
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            content.classList.toggle('full-width');
+        });
+    }
+
+    if (refreshDataBtn) {
+        refreshDataBtn.addEventListener('click', refreshData);
+    }
+
+    if (refreshTableBtn) {
+        refreshTableBtn.addEventListener('click', refreshData);
+    }
+
+    if (modalClose) {
+        modalClose.addEventListener('click', closeActivityModal);
+    }
+
+    activityTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabId = tab.getAttribute('data-tab');
+            switchActivityTab(tabId);
+        });
+    });
+
+    if (applyDateFilterBtn) {
+        applyDateFilterBtn.addEventListener('click', applyDateFilter);
+    }
+
+    if (takeScreenshotBtn) {
+        takeScreenshotBtn.addEventListener('click', () => {
+            if (currentMachineId) {
+                requestScreenshot(currentMachineId);
+            }
+        });
+    }
+
+    if (refreshScreenshotBtn) {
+        refreshScreenshotBtn.addEventListener('click', () => {
+            if (currentMachineId) {
+                requestScreenshot(currentMachineId);
+            }
+        });
+    }
+
+    if (stopListeningBtn) {
+        stopListeningBtn.addEventListener('click', () => {
+            if (currentMachineId) {
+                confirmShutdown(currentMachineId);
+            }
+        });
+    }
+
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', logout);
+    }
+
+    if (downloadLogsBtn) {
+        downloadLogsBtn.addEventListener('click', () => {
+            if (currentMachineId) {
+                downloadMachineLogs(currentMachineId);
+            }
+        });
+    }
+
+    if (globalSearch) {
+        globalSearch.addEventListener('input', filterMachines);
+    }
+
+    if (exportDataBtn) {
+        exportDataBtn.addEventListener('click', exportMachinesData);
+    }
+
+    if (prevPageBtn) {
+        prevPageBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderMachinesTable();
+            }
+        });
+    }
+
+    if (nextPageBtn) {
+        nextPageBtn.addEventListener('click', () => {
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderMachinesTable();
+            }
+        });
+    }
+
+    // Initialize the app
+    refreshData();
+    setupAutoRefresh();
+
+    // Close modal when clicking outside
+    activityModal.addEventListener('click', (e) => {
+        if (e.target === activityModal) {
+            closeActivityModal();
+        }
+    });
+
+    // Setup keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && activityModal.classList.contains('active')) {
+            closeActivityModal();
+        }
+    });
 }
 
-function handleTokenError(errorMsg) {
-    console.error("Token error:", errorMsg);
-    document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    BackToLogin();
+// Utility Functions
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return `${String(date.getDate()).padStart(2, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
+}
+
+function formatTimeAgo(timestamp) {
+    const now = Date.now();
+    const diff = now - timestamp * 1000; // convert to milliseconds
+    
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+    return 'Just now';
+}
+
+function showNotification(type, title, message, duration = 5000) {
+    const notificationContainer = document.getElementById('notifications-container');
+    
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    
+    notification.innerHTML = `
+        <div class="notification-icon">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+        </div>
+        <div class="notification-content">
+            <div class="notification-title">${title}</div>
+            <div class="notification-message">${message}</div>
+        </div>
+        <button class="notification-close">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    notificationContainer.appendChild(notification);
+    
+    // Close button functionality
+    const closeBtn = notification.querySelector('.notification-close');
+    closeBtn.addEventListener('click', () => {
+        notification.classList.add('closing');
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    });
+    
+    // Auto remove after duration
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.classList.add('closing');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 300);
+        }
+    }, duration);
+}
+
+function showLoading() {
+    document.getElementById('loading-overlay').style.display = 'flex';
+}
+
+function hideLoading() {
+    document.getElementById('loading-overlay').style.display = 'none';
 }
 
 async function getCookie(name) {
@@ -18,180 +240,14 @@ async function getCookie(name) {
     return null;
 }
 
-async function GetDemoLogs() {
-    const token = await getCookie("access_token");
-    console.log(token);
-    
-    if (!token) {
-        handleTokenError("No token found");
-        return;
-    }
-
-    try {
-        let response = await fetch("/api/get_demo", {
-            method: "GET",
-            headers: {
-                "Authorization": `Bearer ${token}`
-            }
-        });
-
-        if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
-                handleTokenError(`HTTP error! Status: ${response.status}`);
-            }
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        
-        let data = await response.json();
-        if (data.msg === "Token has expired") {
-            handleTokenError("Token has expired");
-            return;
-        }
-        
-        return data;
-    } catch (error) {
-        console.error("Error fetching demo logs:", error);
-        return null;
-    }
+function handleTokenError(errorMsg) {
+    console.error("Token error:", errorMsg);
+    document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    window.location.href = "/login";
 }
 
-async function GetComputersList() {
-    const token = await getCookie("access_token"); 
-    if (!token) {
-        handleTokenError("No token found");
-        return;
-    }
-
-    try {
-        let response = await fetch("/api/machines", {
-            method: "GET",
-            headers: {
-                "Authorization": `Bearer ${token}`
-            }
-        });
-
-        if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
-                handleTokenError(`HTTP error! Status: ${response.status}`);
-            }
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        
-        let data = await response.json();
-        if (data.msg === "Token has expired") {
-            handleTokenError("Token has expired");
-            return;
-        }
-        return data;
-    } catch (error) {
-        console.error("Error fetching computers list:", error);
-        return null;
-    }
-}
-
-async function GetComputersActivity(machine_sn, start_date, end_date) {
-    const token = await getCookie("access_token"); 
-    if (!token) {
-        handleTokenError("No token found");
-        return;
-    }
-    
-    try {
-        let response = await fetch("/api/keystrokes/"+machine_sn+"?start_date=" + start_date + "&end_date=" + end_date, {
-            method: "GET",
-            headers: {
-                "Authorization": `Bearer ${token}`
-            }
-        });
-        
-        if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
-                handleTokenError(`HTTP error! Status: ${response.status}`);
-            }
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        
-        let data = await response.json();
-        if (data.msg === "Token has expired") {
-            handleTokenError("Token has expired");
-            return;
-        }
-        
-        return data;
-    } catch (error) {
-        console.error("Error fetching computer activity:", error);
-        return null;
-    }
-}
-
-let loadingPopups = {};
-let nextPopupId = 1;
-
-/**
- * Opens a new loading popup
- * @param {string} title Title of the popup
- * @param {string} message Message to display in the popup
- * @param {string} entityId (optional) ID of the entity the popup is related to
- * @param {string} entityIdLabel (optional) Label for the entity ID
- * @returns {number} Unique ID of the popup
- */
-function openLoadingPopup(title, message, entityId = null, entityIdLabel = "ID") {
-    const popupId = nextPopupId++;
-    
-    const popupElement = document.createElement('div');
-    popupElement.className = 'loading-popup';
-    popupElement.id = `loadingPopup_${popupId}`;
-    popupElement.innerHTML = `
-        <h3>${title}</h3>
-        <div class="spinner"></div>
-        <p class="loading-message">${message}</p>
-        ${entityId ? `<p class="entity-id">${entityIdLabel}: <span>${entityId}</span></p>` : ''}
-    `;
-    
-    document.body.appendChild(popupElement);
-    
-    popupElement.style.display = 'block';
-    document.getElementById("overlay").style.display = 'block';
-    
-    loadingPopups[popupId] = {
-        element: popupElement,
-        entityId: entityId
-    };
-    
-    return popupId;
-}
-
-/**
- * Closes a loading popup by ID
- * @param {number} popupId ID of the popup to close
- */
-function closeLoadingPopup(popupId) {
-    if (!loadingPopups[popupId]) return;
-    
-    document.body.removeChild(loadingPopups[popupId].element);
-    
-    delete loadingPopups[popupId];
-    
-    if (Object.keys(loadingPopups).length === 0 && !isPopupOpen) {
-        document.getElementById("overlay").style.display = 'none';
-    }
-}
-
-/**
- * Returns a popup ID by entity ID
- * @param {string} entityId Entity ID to search for
- * @returns {number|null} Popup ID or null if not found
- */
-function getPopupIdByEntityId(entityId) {
-    for (const [popupId, popupData] of Object.entries(loadingPopups)) {
-        if (popupData.entityId === entityId) {
-            return parseInt(popupId);
-        }
-    }
-    return null;
-}
-
-async function StopListening(machineId) {
+// API Functions
+async function fetchMachines() {
     const token = await getCookie("access_token");
     if (!token) {
         handleTokenError("No token found");
@@ -199,14 +255,86 @@ async function StopListening(machineId) {
     }
 
     try {
-        const popupId = openLoadingPopup(
-            "Machine Shutdown",
-            "Please wait while the machine is shutting down",
-            machineId,
-            "Machine ID"
-        );
+        const response = await fetch("/api/machines", {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+                handleTokenError(`HTTP error! Status: ${response.status}`);
+            }
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
         
-        let response = await fetch(`/api/shutdown/${machineId}`, {
+        const data = await response.json();
+        if (data.msg === "Token has expired") {
+            handleTokenError("Token has expired");
+            return;
+        }
+        
+        return data;
+    } catch (error) {
+        console.error("Error fetching machines:", error);
+        showNotification('error', 'Failed to load machines', 'There was an error loading the machine list. Please try again.');
+        return null;
+    }
+}
+
+async function fetchActivityData(machineId, startDate, endDate) {
+    const token = await getCookie("access_token");
+    if (!token) {
+        handleTokenError("No token found");
+        return;
+    }
+    
+    try {
+        showLoading();
+        
+        const response = await fetch(`/api/keystrokes/${machineId}?start_date=${startDate}&end_date=${endDate}`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+        
+        hideLoading();
+        
+        if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+                handleTokenError(`HTTP error! Status: ${response.status}`);
+            }
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        if (data.msg === "Token has expired") {
+            handleTokenError("Token has expired");
+            return;
+        }
+        
+        return data;
+    } catch (error) {
+        hideLoading();
+        console.error("Error fetching activity data:", error);
+        showNotification('error', 'Failed to load activity data', 'There was an error loading the activity data. Please try again.');
+        return null;
+    }
+}
+
+async function shutdownMachine(machineId) {
+    const token = await getCookie("access_token");
+    if (!token) {
+        handleTokenError("No token found");
+        return;
+    }
+
+    try {
+        showLoading();
+        
+        const response = await fetch(`/api/shutdown/${machineId}`, {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${token}`
@@ -214,77 +342,63 @@ async function StopListening(machineId) {
         });
 
         if (!response.ok) {
-            closeLoadingPopup(popupId);
+            hideLoading();
             if (response.status === 401 || response.status === 403) {
                 handleTokenError(`HTTP error! Status: ${response.status}`);
             }
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
 
-        let data = await response.json();
+        const data = await response.json();
         if (data.msg === "Token has expired") {
-            closeLoadingPopup(popupId);
+            hideLoading();
             handleTokenError("Token has expired");
             return;
         }
 
         if (data.status === "success") {
-            let checkStatusInterval = setInterval(async () => {
-                try {
-                    const machinesData = await GetComputersList();
+            // Check for machine status periodically
+            let shutdownCheckInterval = setInterval(async () => {
+                const machinesData = await fetchMachines();
+                
+                if (!machinesData || 
+                    !machinesData[machineId] || 
+                    (machinesData[machineId] && !machinesData[machineId].active)) {
                     
-                    if (!machinesData || 
-                        !machinesData[machineId] || 
-                        (machinesData[machineId] && machinesData[machineId].active === false)) {
-                        
-                        clearInterval(checkStatusInterval);
-                        closeLoadingPopup(popupId);
-                        
-                        let indicator = document.getElementById("indicator");
-                        if (indicator) {
-                            indicator.classList.remove("active");
-                            indicator.title = "Logging is not active.";
-                        }
-                        
-                        const stopButton = document.getElementById("stopListening");
-                        if (stopButton) {
-                            stopButton.style.display = "none";
-                        }
-                    }
-                } catch (error) {
-                    console.error("Error checking machine status:", error);
+                    clearInterval(shutdownCheckInterval);
+                    hideLoading();
+                    
+                    machines = machinesData || {};
+                    updateMachineStatus(machineId);
+                    updateUI();
+                    
+                    showNotification('success', 'Machine Shutdown', `Machine ${machineId} has been successfully shut down.`);
                 }
             }, 2000);
             
+            // Safety timeout after 30 seconds
             setTimeout(() => {
-                if (checkStatusInterval) {
-                    clearInterval(checkStatusInterval);
-                    
-                    const currentPopupId = getPopupIdByEntityId(machineId);
-                    if (currentPopupId !== null) {
-                        closeLoadingPopup(currentPopupId);
-                    }
+                if (shutdownCheckInterval) {
+                    clearInterval(shutdownCheckInterval);
+                    hideLoading();
+                    refreshData();
+                    showNotification('warning', 'Shutdown Status Unknown', `Unable to confirm shutdown status of machine ${machineId}. Please check the machine list.`);
                 }
             }, 30000);
+        } else {
+            hideLoading();
+            showNotification('error', 'Shutdown Failed', `Failed to shutdown machine ${machineId}.`);
         }
 
         return data;
     } catch (error) {
-        const currentPopupId = getPopupIdByEntityId(machineId);
-        if (currentPopupId !== null) {
-            closeLoadingPopup(currentPopupId);
-        }
-        
-        console.error("Error stopping listener:", error);
+        hideLoading();
+        console.error("Error shutting down machine:", error);
+        showNotification('error', 'Shutdown Error', `An error occurred while trying to shutdown machine ${machineId}.`);
         return null;
     }
 }
 
-/**
- * 
- * @param {string} machineId 
- * @returns {Promise<string|null>} 
- */
 async function requestScreenshot(machineId) {
     const token = await getCookie("access_token");
     if (!token) {
@@ -295,7 +409,7 @@ async function requestScreenshot(machineId) {
     try {
         showScreenshotLoading(true);
 
-        let response = await fetch(`/api/take_screenshot/${machineId}`, {
+        const response = await fetch(`/api/take_screenshot/${machineId}`, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${token}`
@@ -304,14 +418,14 @@ async function requestScreenshot(machineId) {
 
         if (!response.ok) {
             showScreenshotLoading(false);
-            showScreenshotMessage("שגיאה בבקשת צילום המסך");
+            showScreenshotMessage("Failed to request screenshot");
             if (response.status === 401 || response.status === 403) {
                 handleTokenError(`HTTP error! Status: ${response.status}`);
             }
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
 
-        let data = await response.json();
+        const data = await response.json();
         if (data.msg === "Token has expired") {
             showScreenshotLoading(false);
             handleTokenError("Token has expired");
@@ -319,115 +433,609 @@ async function requestScreenshot(machineId) {
         }
 
         if (data.status === "request sent") {
-            // מתחיל לבדוק אם הצילום התקבל
+            // Start polling for the screenshot
             startScreenshotPolling(machineId, data.id);
             return data.id;
         } else {
             showScreenshotLoading(false);
-            showScreenshotMessage("שגיאה בבקשת צילום המסך");
+            showScreenshotMessage("Failed to request screenshot");
             return null;
         }
     } catch (error) {
         showScreenshotLoading(false);
-        showScreenshotMessage("שגיאה בבקשת צילום המסך");
+        showScreenshotMessage("Error requesting screenshot");
         console.error("Error requesting screenshot:", error);
         return null;
     }
 }
-/**
- * 
- * @param {string} machineId 
- * @param {string} screenshotId 
- */
+
 function startScreenshotPolling(machineId, screenshotId) {
+    clearInterval(screenshotPollingInterval);
+    
     let checkCount = 0;
     const maxChecks = 60;
-    let imageResponseReceived = false;
     
-    const checkInterval = setInterval(() => {
+    screenshotPollingInterval = setInterval(() => {
         checkCount++;
         
-        if (imageResponseReceived) {
-            return;
-        }
-
-        fetch(`/api/screenshots/${machineId}/${screenshotId}`)
+        fetch(`/api/screenshots/${machineId}/${screenshotId}?check=true`)
             .then(response => {
                 if (response.ok) {
-                    imageResponseReceived = true;
-                    clearInterval(checkInterval);
-                    
-                    loadImage();
+                    clearInterval(screenshotPollingInterval);
+                    loadScreenshot(machineId, screenshotId);
                     return true;
                 }
                 return false;
             })
             .catch(() => {
                 if (checkCount >= maxChecks) {
-                    clearInterval(checkInterval);
+                    clearInterval(screenshotPollingInterval);
                     showScreenshotLoading(false);
-                    showScreenshotMessage("No screenshot received");
+                    showScreenshotMessage("Screenshot not received");
                 }
             });
         
-        function loadImage() {
-            const imgElement = document.getElementById("screenshotImage");
-            
-            imgElement.onload = function() {
-                showScreenshotLoading(false);
-                imgElement.style.display = "block";
-                document.getElementById("screenshotMessage").style.display = "none";
-            };
-            
-            imgElement.onerror = function() {
-                imgElement.style.display = "none";
-                showScreenshotLoading(false);
-                showScreenshotMessage("a broblam occured while loading the screenshot");
-            };
-            
-            const timestamp = new Date().getTime();
-            imgElement.src = `/api/screenshots/${machineId}/${screenshotId}?t=${timestamp}`;
-        }
-        
         if (checkCount >= maxChecks) {
-            clearInterval(checkInterval);
+            clearInterval(screenshotPollingInterval);
             showScreenshotLoading(false);
-            showScreenshotMessage("No screenshot received");
+            showScreenshotMessage("Screenshot not received");
         }
     }, 1000);
 }
-/**
- * 
- * @param {boolean} show
- */
+
+function loadScreenshot(machineId, screenshotId) {
+    const imgElement = document.getElementById("screenshot-img");
+    
+    imgElement.onload = function() {
+        showScreenshotLoading(false);
+        imgElement.style.display = "block";
+        document.getElementById("screenshot-placeholder").style.display = "none";
+    };
+    
+    imgElement.onerror = function() {
+        imgElement.style.display = "none";
+        showScreenshotLoading(false);
+        showScreenshotMessage("Error loading screenshot");
+    };
+    
+    const timestamp = new Date().getTime();
+    imgElement.src = `/api/screenshots/${machineId}/${screenshotId}?t=${timestamp}`;
+}
+
 function showScreenshotLoading(show) {
-    const spinner = document.getElementById("screenshotSpinner");
-    const message = document.getElementById("screenshotMessage");
-    const image = document.getElementById("screenshotImage");
+    const loadingElement = document.getElementById("screenshot-loading");
+    const placeholderElement = document.getElementById("screenshot-placeholder");
+    const imageElement = document.getElementById("screenshot-img");
     
     if (show) {
-        spinner.style.display = "block";
-        message.style.display = "block";
-        message.textContent = "screenshot loading...";
-        image.style.display = "none";
+        loadingElement.style.display = "flex";
+        placeholderElement.style.display = "none";
+        imageElement.style.display = "none";
     } else {
-        spinner.style.display = "none";
+        loadingElement.style.display = "none";
     }
 }
 
-/**
- * 
- * @param {string} message
- */
 function showScreenshotMessage(message) {
-    const messageElement = document.getElementById("screenshotMessage");
-    messageElement.textContent = message;
-    messageElement.style.display = "block";
-    document.getElementById("screenshotImage").style.display = "none";
+    const placeholderElement = document.getElementById("screenshot-placeholder");
+    placeholderElement.textContent = message;
+    placeholderElement.style.display = "block";
+    document.getElementById("screenshot-img").style.display = "none";
 }
 
-async function deleteComputer(machineId) {
+// UI Functions
+function updateDashboardStats() {
+    // Count all machines
+    const totalMachines = Object.keys(machines).length;
+    document.getElementById('total-machines').textContent = totalMachines;
+    
+    // Count active machines
+    const activeMachines = Object.values(machines).filter(machine => machine.active).length;
+    document.getElementById('active-machines').textContent = activeMachines;
+    document.getElementById('active-machines-count').textContent = activeMachines;
+    
+    // For other stats - we'll use placeholder values or calculate from data
+    let totalKeystrokes = 0;
+    let totalScreenshots = 0;
+    
+    // In a real implementation, these would be fetched from the server
+    document.getElementById('total-keystrokes').textContent = totalKeystrokes.toLocaleString();
+    document.getElementById('total-screenshots').textContent = totalScreenshots.toLocaleString();
+    document.getElementById('total-data-count').textContent = '1.2 MB'; // Placeholder
+}
 
+function renderMachinesTable() {
+    const machinesTableBody = document.getElementById('machines-table-body');
+    const machinesArray = Object.entries(machines);
+    totalPages = Math.ceil(machinesArray.length / itemsPerPage);
+    
+    // Update pagination info
+    document.getElementById('pagination-info').textContent = `Page ${currentPage} of ${totalPages || 1}`;
+    document.getElementById('prev-page').disabled = currentPage === 1;
+    document.getElementById('next-page').disabled = currentPage === totalPages || totalPages === 0;
+    
+    // Update table info
+    document.getElementById('table-info').textContent = `Showing ${machinesArray.length} machines`;
+    
+    // Calculate start and end indices for current page
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, machinesArray.length);
+    
+    // Clear existing table content
+    machinesTableBody.innerHTML = '';
+    
+    // Check if there are any machines
+    if (machinesArray.length === 0) {
+        const emptyRow = document.createElement('tr');
+        emptyRow.innerHTML = `<td colspan="6" class="text-center">No machines found</td>`;
+        machinesTableBody.appendChild(emptyRow);
+        return;
+    }
+    
+    // Render machines for current page
+    for (let i = startIndex; i < endIndex; i++) {
+        const [id, machine] = machinesArray[i];
+        const row = document.createElement('tr');
+        row.setAttribute('data-id', id);
+        
+        const lastActivity = machine.active ? 'Active now' : 'Offline';
+        
+        row.innerHTML = `
+            <td>${id}</td>
+            <td>${machine.name}</td>
+            <td>${machine.ip}</td>
+            <td>${lastActivity}</td>
+            <td>
+                <span class="status ${machine.active ? 'active' : 'inactive'}">
+                    <span class="status-dot ${machine.active ? 'active' : 'inactive'}"></span>
+                    ${machine.active ? 'Active' : 'Inactive'}
+                </span>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-outline view-activity" data-id="${id}">
+                    <i class="fas fa-eye"></i> View
+                </button>
+                ${machine.active ? `
+                <button class="btn btn-sm btn-danger shutdown-machine" data-id="${id}">
+                    <i class="fas fa-power-off"></i>
+                </button>
+                ` : `
+                <button class="btn btn-sm btn-outline delete-machine" data-id="${id}">
+                    <i class="fas fa-trash"></i>
+                </button>
+                `}
+            </td>
+        `;
+        
+        machinesTableBody.appendChild(row);
+    }
+    
+    // Add event listeners to action buttons
+    const viewButtons = document.querySelectorAll('.view-activity');
+    const shutdownButtons = document.querySelectorAll('.shutdown-machine');
+    const deleteButtons = document.querySelectorAll('.delete-machine');
+    
+    viewButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            const machineId = e.currentTarget.getAttribute('data-id');
+            openActivityModal(machineId);
+        });
+    });
+    
+    shutdownButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            const machineId = e.currentTarget.getAttribute('data-id');
+            confirmShutdown(machineId);
+            e.stopPropagation();
+        });
+    });
+    
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            const machineId = e.currentTarget.getAttribute('data-id');
+            confirmDeleteMachine(machineId);
+            e.stopPropagation();
+        });
+    });
+    
+    // Make entire row clickable to view activity
+    const rows = machinesTableBody.querySelectorAll('tr');
+    rows.forEach(row => {
+        row.addEventListener('click', (e) => {
+            if (!e.target.closest('button')) {
+                const machineId = row.getAttribute('data-id');
+                if (machineId) {
+                    openActivityModal(machineId);
+                }
+            }
+        });
+    });
+}
+
+function filterMachines() {
+    const searchTerm = document.getElementById('global-search').value.toLowerCase();
+    
+    if (!searchTerm) {
+        renderMachinesTable();
+        return;
+    }
+    
+    const filteredMachines = {};
+    
+    Object.entries(machines).forEach(([id, machine]) => {
+        if (id.toString().includes(searchTerm) || 
+            machine.name.toLowerCase().includes(searchTerm) || 
+            machine.ip.toLowerCase().includes(searchTerm)) {
+            filteredMachines[id] = machine;
+        }
+    });
+    
+    const machinesTableBody = document.getElementById('machines-table-body');
+    machinesTableBody.innerHTML = '';
+    
+    if (Object.keys(filteredMachines).length === 0) {
+        const emptyRow = document.createElement('tr');
+        emptyRow.innerHTML = `<td colspan="6" class="text-center">No matching machines found</td>`;
+        machinesTableBody.appendChild(emptyRow);
+        return;
+    }
+    
+    Object.entries(filteredMachines).forEach(([id, machine]) => {
+        const row = document.createElement('tr');
+        row.setAttribute('data-id', id);
+        
+        const lastActivity = machine.active ? 'Active now' : 'Offline';
+        
+        row.innerHTML = `
+            <td>${id}</td>
+            <td>${machine.name}</td>
+            <td>${machine.ip}</td>
+            <td>${lastActivity}</td>
+            <td>
+                <span class="status ${machine.active ? 'active' : 'inactive'}">
+                    <span class="status-dot ${machine.active ? 'active' : 'inactive'}"></span>
+                    ${machine.active ? 'Active' : 'Inactive'}
+                </span>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-outline view-activity" data-id="${id}">
+                    <i class="fas fa-eye"></i> View
+                </button>
+                ${machine.active ? `
+                <button class="btn btn-sm btn-danger shutdown-machine" data-id="${id}">
+                    <i class="fas fa-power-off"></i>
+                </button>
+                ` : `
+                <button class="btn btn-sm btn-outline delete-machine" data-id="${id}">
+                    <i class="fas fa-trash"></i>
+                </button>
+                `}
+            </td>
+        `;
+        
+        machinesTableBody.appendChild(row);
+    });
+    
+    // Re-add event listeners
+    const viewButtons = document.querySelectorAll('.view-activity');
+    const shutdownButtons = document.querySelectorAll('.shutdown-machine');
+    const deleteButtons = document.querySelectorAll('.delete-machine');
+    
+    viewButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            const machineId = e.currentTarget.getAttribute('data-id');
+            openActivityModal(machineId);
+        });
+    });
+    
+    shutdownButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            const machineId = e.currentTarget.getAttribute('data-id');
+            confirmShutdown(machineId);
+            e.stopPropagation();
+        });
+    });
+    
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            const machineId = e.currentTarget.getAttribute('data-id');
+            confirmDeleteMachine(machineId);
+            e.stopPropagation();
+        });
+    });
+    
+    // Make entire row clickable
+    const rows = machinesTableBody.querySelectorAll('tr');
+    rows.forEach(row => {
+        row.addEventListener('click', (e) => {
+            if (!e.target.closest('button')) {
+                const machineId = row.getAttribute('data-id');
+                if (machineId) {
+                    openActivityModal(machineId);
+                }
+            }
+        });
+    });
+}
+
+async function openActivityModal(machineId) {
+    currentMachineId = machineId;
+    
+    // Update machine info
+    updateMachineInfo(machineId);
+    
+    // Show modal
+    document.getElementById('activity-modal').classList.add('active');
+    
+    // Load activity data
+    await loadActivityData(machineId);
+    
+    // Load screenshot if machine is active
+    if (machines[machineId] && machines[machineId].active) {
+        requestScreenshot(machineId);
+    } else {
+        showScreenshotMessage("Machine is inactive");
+    }
+}
+
+function closeActivityModal() {
+    document.getElementById('activity-modal').classList.remove('active');
+    clearInterval(screenshotPollingInterval);
+    currentMachineId = null;
+}
+
+function updateMachineInfo(machineId) {
+    const machine = machines[machineId];
+    
+    if (!machine) {
+        console.error(`Machine with ID ${machineId} not found`);
+        return;
+    }
+    
+    document.getElementById('machine-id').textContent = machineId;
+    document.getElementById('machine-name').textContent = machine.name;
+    document.getElementById('machine-ip').textContent = machine.ip;
+    
+    const statusElement = document.getElementById('machine-status');
+    statusElement.innerHTML = `
+        <span class="status ${machine.active ? 'active' : 'inactive'}">
+            <span class="status-dot ${machine.active ? 'active' : 'inactive'}"></span>
+            ${machine.active ? 'Active' : 'Inactive'}
+        </span>
+    `;
+    
+    // Update buttons visibility based on machine status
+    document.getElementById('take-screenshot').disabled = !machine.active;
+    document.getElementById('stop-listening').disabled = !machine.active;
+    document.getElementById('stop-listening').style.display = machine.active ? 'block' : 'none';
+}
+
+function updateMachineStatus(machineId) {
+    if (currentMachineId === machineId) {
+        updateMachineInfo(machineId);
+    }
+}
+
+async function loadActivityData(machineId) {
+    const startDate = formatDate(document.getElementById('start-date').value);
+    const endDate = formatDate(document.getElementById('end-date').value);
+    
+    const data = await fetchActivityData(machineId, startDate, endDate);
+    
+    if (!data) {
+        console.error('Failed to load activity data');
+        document.getElementById('activity-table-body').innerHTML = `
+            <tr><td colspan="3" class="text-center">Failed to load activity data</td></tr>
+        `;
+        document.getElementById('activity-timeline').innerHTML = `
+            <div class="text-center">Failed to load activity data</div>
+        `;
+        return;
+    }
+    
+    activityData = data;
+    
+    renderActivityTable(data);
+    renderActivityTimeline(data);
+    renderActivityChart(data);
+}
+
+function renderActivityTable(data) {
+    const activityTableBody = document.getElementById('activity-table-body');
+    activityTableBody.innerHTML = '';
+    
+    if (!data || !data.logs || Object.keys(data.logs).length === 0) {
+        activityTableBody.innerHTML = `
+            <tr><td colspan="3" class="text-center">No activity data available</td></tr>
+        `;
+        return;
+    }
+    
+    // Flatten the nested structure for table view
+    const flattenedData = [];
+    
+    Object.entries(data.logs).forEach(([window, entries]) => {
+        Object.entries(entries).forEach(([time, text]) => {
+            flattenedData.push({ time, window, text });
+        });
+    });
+    
+    // Sort by time (newest first)
+    flattenedData.sort((a, b) => {
+        return new Date(b.time.replace(' - ', ' ')) - new Date(a.time.replace(' - ', ' '));
+    });
+    
+    // Render table rows
+    flattenedData.forEach(entry => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${entry.time}</td>
+            <td>${entry.window}</td>
+            <td>${entry.text}</td>
+        `;
+        activityTableBody.appendChild(row);
+    });
+}
+
+function renderActivityTimeline(data) {
+    const activityTimeline = document.getElementById('activity-timeline');
+    activityTimeline.innerHTML = '';
+    
+    if (!data || !data.logs || Object.keys(data.logs).length === 0) {
+        activityTimeline.innerHTML = `
+            <div class="text-center">No activity data available</div>
+        `;
+        return;
+    }
+    
+    // Flatten and sort data for timeline
+    const flattenedData = [];
+
+    Object.entries(data.logs).forEach(([window, entries]) => {
+        Object.entries(entries).forEach(([time, text]) => {
+            flattenedData.push({ time, window, text });
+        });
+    });
+
+    // Sort by time (oldest first for timeline view)
+    flattenedData.sort((a, b) => {
+        return new Date(a.time.replace(' - ', ' ')) - new Date(b.time.replace(' - ', ' '));
+    });
+
+    // Render timeline items
+    flattenedData.forEach(entry => {
+        const timelineItem = document.createElement('div');
+        timelineItem.className = 'timeline-item';
+
+        timelineItem.innerHTML = `
+            <div class="timeline-icon"></div>
+            <div class="timeline-content">
+                <div class="timeline-time">${entry.time}</div>
+                <div class="timeline-app">${entry.window}</div>
+                <div class="timeline-text">${entry.text}</div>
+            </div>
+        `;
+
+        activityTimeline.appendChild(timelineItem);
+    });
+}
+
+function renderActivityChart(data) {
+    const chartCanvas = document.getElementById('activity-chart');
+
+    if (!data || !data.info || !data.info.dates) {
+        document.getElementById('activity-chart-view').innerHTML = `
+            <div class="text-center">No chart data available</div>
+        `;
+        return;
+    }
+
+    // Prepare data for chart
+    const dates = Object.keys(data.info.dates);
+    const counts = Object.values(data.info.dates);
+
+    // Destroy previous chart if exists
+    if (activityChart) {
+        activityChart.destroy();
+    }
+
+    // Create new chart
+    activityChart = new Chart(chartCanvas, {
+        type: 'bar',
+        data: {
+            labels: dates,
+            datasets: [{
+                label: 'Keystrokes Logged',
+                data: counts,
+                backgroundColor: 'rgba(37, 99, 235, 0.7)',
+                borderColor: 'rgba(37, 99, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Count'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                }
+            }
+        }
+    });
+
+    // Update stats
+    const totalKeystrokes = counts.reduce((a, b) => a + b, 0);
+    document.getElementById('stats-keystrokes').textContent = totalKeystrokes;
+
+    // Find most active window
+    let windowCounts = {};
+    if (data.logs) {
+        Object.entries(data.logs).forEach(([window, entries]) => {
+            windowCounts[window] = Object.keys(entries).length;
+        });
+
+        let mostActiveWindow = Object.entries(windowCounts).sort((a, b) => b[1] - a[1])[0];
+        if (mostActiveWindow) {
+            document.getElementById('stats-active-window').textContent = mostActiveWindow[0];
+        }
+    }
+
+    // Determine peak activity time (just a placeholder logic - this would be more sophisticated in a real app)
+    let maxCount = Math.max(...counts);
+    let peakDateIndex = counts.indexOf(maxCount);
+    if (peakDateIndex >= 0) {
+        document.getElementById('stats-peak-time').textContent = dates[peakDateIndex];
+    }
+}
+
+function switchActivityTab(tabId) {
+    // Update tab buttons
+    document.querySelectorAll('.activity-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelector(`.activity-tab[data-tab="${tabId}"]`).classList.add('active');
+
+    // Update tab content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.style.display = 'none';
+    });
+    document.getElementById(`activity-${tabId}-view`).style.display = 'block';
+
+    // Refresh chart if switching to chart tab
+    if (tabId === 'chart' && activityChart) {
+        activityChart.update();
+    }
+}
+
+function applyDateFilter() {
+    if (currentMachineId) {
+        loadActivityData(currentMachineId);
+    }
+}
+
+function confirmShutdown(machineId) {
+    if (confirm(`Are you sure you want to shutdown machine ${machineId}?`)) {
+        shutdownMachine(machineId);
+    }
+}
+
+async function confirmDeleteMachine(machineId) {
+    if (confirm(`Are you sure you want to delete machine ${machineId}? This action cannot be undone.`)) {
+        await deleteMachine(machineId);
+    }
+}
+
+async function deleteMachine(machineId) {
     const token = await getCookie("access_token");
     if (!token) {
         handleTokenError("No token found");
@@ -435,12 +1043,16 @@ async function deleteComputer(machineId) {
     }
 
     try {
-        let response = await fetch(`/api/machine/${machineId}`, {
+        showLoading();
+
+        const response = await fetch(`/api/machine/${machineId}`, {
             method: "DELETE",
             headers: {
                 "Authorization": `Bearer ${token}`
             }
         });
+
+        hideLoading();
 
         if (!response.ok) {
             if (response.status === 401 || response.status === 403) {
@@ -449,586 +1061,88 @@ async function deleteComputer(machineId) {
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
 
-        let data = await response.json();
+        const data = await response.json();
         if (data.msg === "Token has expired") {
             handleTokenError("Token has expired");
             return;
         }
 
         if (data.status === "success") {
-            fetchLogs();
+            refreshData();
+            showNotification('success', 'Machine Deleted', `Machine ${machineId} has been successfully deleted.`);
+        } else {
+            showNotification('error', 'Delete Failed', `Failed to delete machine ${machineId}.`);
         }
 
         return data;
     } catch (error) {
-        console.error("Error deleting computer:", error);
+        hideLoading();
+        console.error("Error deleting machine:", error);
+        showNotification('error', 'Delete Error', `An error occurred while trying to delete machine ${machineId}.`);
         return null;
     }
 }
 
-let isPopupOpen = false;
-let autoRefreshInterval = null;
-let currentMachineId = null;
-let currentStartDate = null;
-let currentEndDate = null;
+function downloadMachineLogs(machineId) {
+    // This is a placeholder function for now
+    // In a real app, you would make an API call to get the logs in a downloadable format
+    showNotification('info', 'Feature Not Available', 'Log download functionality is not implemented yet.');
+}
 
-let currentSortColumn = null;
-let currentSortDirection = null;
-let currentActivitySortColumn = null;
-let currentActivitySortDirection = null;
+function exportMachinesData() {
+    // Convert machines data to CSV
+    const headers = ['ID', 'Name', 'IP Address', 'Status'];
+    let csvContent = headers.join(',') + '\n';
 
-/**
- * 
- * @param {Object} datesData
- */
-function createActivityChart(datesData) {
-    const chartContainer = document.querySelector('.chart-container');
-    if (!chartContainer) return;
-    
-    chartContainer.style.display = 'block';
-    
-    const dates = Object.keys(datesData);
-    const counts = Object.values(datesData);
-    
-    const canvas = document.getElementById('activityChart');
-    const ctx = canvas.getContext('2d');
-    
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    const chartWidth = canvas.width - 60;
-    const chartHeight = canvas.height - 40;
-    const barWidth = Math.max(Math.floor(chartWidth / (dates.length || 1)) - 10, 15);
-    const maxCount = Math.max(...counts, 1);
-    
-    ctx.beginPath();
-    ctx.strokeStyle = '#333';
-    ctx.lineWidth = 2;
-    ctx.moveTo(40, 10);
-    ctx.lineTo(40, 10 + chartHeight);
-    ctx.lineTo(40 + chartWidth, 10 + chartHeight);
-    ctx.stroke();
-    
-    ctx.font = '10px Arial';
-    ctx.fillStyle = '#333';
-    ctx.textAlign = 'right';
-    
-    const ySteps = 5;
-    for (let i = 0; i <= ySteps; i++) {
-        const y = 10 + chartHeight - (i * chartHeight / ySteps);
-        const value = Math.round(i * maxCount / ySteps);
-        ctx.fillText(value.toString(), 35, y + 3);
-        
-        ctx.beginPath();
-        ctx.strokeStyle = '#ddd';
-        ctx.lineWidth = 1;
-        ctx.moveTo(40, y);
-        ctx.lineTo(40 + chartWidth, y);
-        ctx.stroke();
-    }
-    
-    dates.forEach((date, index) => {
-        const count = counts[index];
-        const x = 40 + (index * (chartWidth / dates.length)) + ((chartWidth / dates.length) - barWidth) / 2;
-        const barHeight = (count / maxCount) * chartHeight;
-        
-        ctx.fillStyle = count > 0 ? '#0cac2a' : '#ddd';
-        ctx.fillRect(x, 10 + chartHeight - barHeight, barWidth, barHeight);
-        
-        ctx.beginPath();
-        ctx.strokeStyle = '#0a8021';
-        ctx.lineWidth = 1;
-        ctx.rect(x, 10 + chartHeight - barHeight, barWidth, barHeight);
-        ctx.stroke();
-        
-        const shortDate = date.split('-').slice(0, 2).join('-');
-        ctx.fillStyle = '#333';
-        ctx.textAlign = 'center';
-        ctx.save();
-        ctx.translate(x + barWidth/2, 10 + chartHeight + 15);
-        ctx.fillText(shortDate, 0, 0);
-        ctx.restore();
-        
-        if (count > 0) {
-            ctx.fillStyle = '#000';
-            ctx.textAlign = 'center';
-            ctx.fillText(count.toString(), x + barWidth/2, 10 + chartHeight - barHeight - 5);
-        }
+    Object.entries(machines).forEach(([id, machine]) => {
+        const row = [
+            id,
+            machine.name,
+            machine.ip,
+            machine.active ? 'Active' : 'Inactive'
+        ];
+        csvContent += row.join(',') + '\n';
     });
+
+    // Create download link
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('href', url);
+    a.setAttribute('download', `machines_export_${new Date().toISOString().slice(0, 10)}.csv`);
+    a.click();
+
+    // Clean up
+    URL.revokeObjectURL(url);
 }
 
-async function fetchLogs() {
-    const tableBody = document.getElementById("ComputersTableBody");
-    
-    try {
-        const data = await GetComputersList();
-        
-        let newContent = "";
-        
-        if (!data || typeof data !== "object" || Object.keys(data).length === 0) { 
-            newContent = "<tr><td colspan='5' class='text-center'>No available data</td></tr>";
-        } else {
-            Object.entries(data).forEach(([id, details]) => {
-                newContent += `
-                    <tr data-id="${id}">
-                        <td>${id}</td>
-                        <td>${details.ip}</td>
-                        <td>${details.name}</td>
-                        <td>
-                            <div class="cell-container">
-                                <span class="text">${details.active ? '✅' : '🟥'}</span>
-                                ${!details.active ? `<button class="delete-button" data-id="${id}">🗑️</button>` : ''}
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-        
-        tableBody.innerHTML = newContent;
-        
-        addRowClickListeners();
-        addDeleteButtonListeners();
-        setupTableSorting("ComputersTable", [3], false);
-        
-    } catch (error) {
-        console.error("Error in fetchLogs:", error);
-        tableBody.innerHTML = "<tr><td colspan='5' class='text-center'>Error loading data</td></tr>";
+function logout() {
+    document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    window.location.href = "/login";
+}
+
+async function refreshData() {
+    showLoading();
+    const fetchedMachines = await fetchMachines();
+    hideLoading();
+
+    if (fetchedMachines) {
+        machines = fetchedMachines;
+        updateUI();
     }
 }
 
-function addDeleteButtonListeners() {
-    const deleteButtons = document.querySelectorAll(".delete-button");
-    deleteButtons.forEach(button => {
-        button.addEventListener("click", function(event) {
-            event.stopPropagation();
-            const machineId = this.getAttribute("data-id");
-            deleteComputer(machineId);
-        });
-    });
-}
-
-function formatDateToDDMMYYYY(dateStr) {
-    let date = new Date(dateStr);
-    let day = String(date.getDate()).padStart(2, '0');
-    let month = String(date.getMonth() + 1).padStart(2, '0');
-    let year = date.getFullYear();
-    return `${day}-${month}-${year}`;
-}
-
-async function LoadComputerActivity(machine_sn, start_date, end_date) {
-    const activityTable = document.getElementById("ActivityTable");
-    
-    try {
-        const log = await GetComputersActivity(machine_sn, start_date, end_date);
-        
-        let newContent = "";
-        
-        if (!log) {
-            newContent = "<tr><td colspan='3' class='text-center'>No available data</td></tr>";
-        } else if (log.error) {
-            newContent = `<tr><td colspan='3' class='text-center'>${log.error}</td></tr>`;
-        } else if (typeof log !== "object" || Object.keys(log).length === 0 || !log.logs) {
-            newContent = "<tr><td colspan='3' class='text-center'>No available data</td></tr>";
-        } else {
-            Object.entries(log.logs).forEach(([window, val]) => {
-                Object.entries(val).forEach(([time, text]) => {
-                    newContent += `<tr><td>${time}</td><td>${window}</td><td>${text}</td></tr>`;
-                });
-            });  
-        }
-        
-        activityTable.innerHTML = newContent;
-        setupTableSorting("ActivityTable", [0], true);
-        
-        if (log && log.info && log.info.dates) {
-            createActivityChart(log.info.dates);
-        }
-        
-    } catch (error) {
-        console.error("Error in LoadComputerActivity:", error);
-        activityTable.innerHTML = "<tr><td colspan='3' class='text-center'>Error loading data</td></tr>";
-    }
-}
-
-
-async function updateMachineStatus() {
-    if (!currentMachineId) return;
-    
-    try {
-        const data = await GetComputersList();
-        if (!data || !data[currentMachineId]) return;
-        
-        const machineDetails = data[currentMachineId];
-        const wasActive = document.getElementById("indicator").classList.contains("active");
-        
-        let indicator = document.getElementById("indicator");
-        if (machineDetails.active) {
-            indicator.classList.add("active");
-            indicator.title = "Logging is active.";
-        } else {
-            indicator.classList.remove("active");
-            indicator.title = "Logging is not active.";
-        }
-        
-        const stopButton = document.getElementById("stopListening");
-        if (machineDetails.active) {
-            stopButton.style.display = "block";
-        } else {
-            stopButton.style.display = "none";
-        }
-        
-        if (machineDetails.active && currentStartDate && currentEndDate) {
-            LoadComputerActivity(currentMachineId, currentStartDate, currentEndDate);
-        }
-    } catch (error) {
-        console.error("Error updating machine status:", error);
-    }
-}
-
-const popup = document.getElementById("ComputerActivity");
-const overlay = document.getElementById("overlay");
-const closePopupBtn = document.getElementById("closePopup");
-
-function closePopup() {
-    popup.style.display = "none";
-    overlay.style.display = "none";
-    isPopupOpen = false;
-    currentMachineId = null;
-    currentStartDate = null;
-    currentEndDate = null;
-    
-    currentActivitySortColumn = null;
-    currentActivitySortDirection = null;
-
-    const stopListeningButton = document.getElementById("stopListening");
-    if (stopListeningButton) {
-        stopListeningButton.replaceWith(stopListeningButton.cloneNode(true));
-    }
-    
-    const chartContainer = document.querySelector('.chart-container');
-    if (chartContainer) {
-        chartContainer.style.display = 'none';
-    }
-
-    const screenshotImage = document.getElementById("screenshotImage");
-    if (screenshotImage) {
-        screenshotImage.src = "";
-        screenshotImage.style.display = "none";
-    }
-    
-    const screenshotMessage = document.getElementById("screenshotMessage");
-    if (screenshotMessage) {
-        screenshotMessage.textContent = "אין צילום מסך זמין";
-        screenshotMessage.style.display = "block";
-    }
-    
-    setupAutoRefresh();
-}
-
-function openPopup(machineId, ip, name, active) {
-    document.getElementById("compId").textContent = machineId;
-    document.getElementById("compIp").textContent = ip;
-    document.getElementById("compName").textContent = name;
-
-    currentMachineId = machineId;
-    isPopupOpen = true;
-
-    let indicator = document.getElementById("indicator");
-    if (active === '✅') {
-        indicator.classList.add("active");
-        indicator.title = "Logging is active.";
-        
-        document.getElementById("stopListening").style.display = "block";
-    } else {
-        indicator.classList.remove("active");
-        indicator.title = "Logging is not active.";
-        
-        document.getElementById("stopListening").style.display = "none";
-    }
-
-    popup.style.display = "block";
-    overlay.style.display = "block";
-
-    let today = new Date().toISOString().split('T')[0];
-    let lasdweek = new Date(new Date().getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    document.getElementById("startDate").value = lasdweek;
-    document.getElementById("endDate").value = today;
-
-    currentStartDate = formatDateToDDMMYYYY(lasdweek);
-    currentEndDate = formatDateToDDMMYYYY(today);
-
-    LoadComputerActivity(machineId, formatDateToDDMMYYYY(lasdweek), formatDateToDDMMYYYY(today));
-
-    const stopListeningButton = document.getElementById("stopListening");
-    stopListeningButton.replaceWith(stopListeningButton.cloneNode(true));
-
-    document.getElementById("stopListening").addEventListener("click", function() {
-        const currentMachineId = document.getElementById("compId").textContent;
-        StopListening(currentMachineId);
-    });
-    
-    const takeScreenshotButton = document.getElementById("takeScreenshot");
-    takeScreenshotButton.replaceWith(takeScreenshotButton.cloneNode(true));
-    document.getElementById("takeScreenshot").addEventListener("click", function() {
-        requestScreenshot(machineId);
-    });
-    
-    if (active === '✅') {
-        requestScreenshot(machineId);
-    } else {
-        showScreenshotMessage("Computer is not active");
-    }
-    
-    const activityTable = document.querySelector('.activity-section table');
-    if (activityTable) {
-        const headers = activityTable.querySelectorAll('th');
-        headers.forEach((header, index) => {
-            if (index === 0) return;
-            
-            header.classList.add('sortable');
-            
-            const newHeader = header.cloneNode(true);
-            header.parentNode.replaceChild(newHeader, header);
-            
-            newHeader.addEventListener('click', (event) => {
-                event.stopPropagation();
-                
-                headers.forEach(h => {
-                    if (h !== newHeader) {
-                        h.classList.remove('sort-asc', 'sort-desc');
-                    }
-                });
-                
-                let asc = true;
-                if (newHeader.classList.contains('sort-asc')) {
-                    newHeader.classList.remove('sort-asc');
-                    newHeader.classList.add('sort-desc');
-                    asc = false;
-                } else if (newHeader.classList.contains('sort-desc')) {
-                    newHeader.classList.remove('sort-desc');
-                    newHeader.classList.add('sort-asc');
-                    asc = true;
-                } else {
-                    newHeader.classList.add('sort-asc');
-                }
-                
-                currentActivitySortColumn = index;
-                currentActivitySortDirection = asc ? 'asc' : 'desc';
-                
-                sortTable(activityTable, index, asc);
-            });
-        });
-    }
-    
-    setupAutoRefresh();
+function updateUI() {
+    updateDashboardStats();
+    renderMachinesTable();
 }
 
 function setupAutoRefresh() {
+    // Clear existing interval
     if (autoRefreshInterval) {
         clearInterval(autoRefreshInterval);
-        autoRefreshInterval = null;
     }
-    
-    if (isPopupOpen) {
-        autoRefreshInterval = setInterval(() => {
-            updateMachineStatus();
-        }, 5000);
-    } else {
-        autoRefreshInterval = setInterval(() => {
-            fetchLogs();
-        }, 5000);
-    }
-}
 
-function addRowClickListeners() {
-    const rows = document.querySelectorAll("#ComputersTableBody tr");
-    rows.forEach(row => {
-        row.addEventListener("click", function() {
-            let rowData = Array.from(this.children).map(td => td.textContent.trim());
-            openPopup(rowData[0], rowData[1], rowData[2], rowData[3]);
-        });
-    });
-}
-
-document.addEventListener("DOMContentLoaded", function() {
-    fetchLogs();
-    
-    closePopupBtn.addEventListener("click", closePopup);
-    
-    overlay.addEventListener("click", function() {
-        if (Object.keys(loadingPopups).length > 0) {
-            return;
-        } 
-        else if (isPopupOpen) {
-            closePopup();
-        }
-    });
-    
-    document.addEventListener("keydown", function(event) {
-        if (event.key === "Escape") {
-            if (Object.keys(loadingPopups).length > 0) {
-                return;
-            } 
-            else if (isPopupOpen) {
-                closePopup();
-            }
-        }
-    });
-    
-    document.getElementById("logout").addEventListener("click", async function() {
-        document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        BackToLogin();
-    });
-    
-    document.getElementById("ComputersTable").addEventListener("click", function(event) {
-        if (event.target.tagName === 'TH') return;
-        
-        let row = event.target.closest("tr");
-        if (!row) return;
-
-        let rowData = Array.from(row.children).map(td => td.textContent.trim());
-        openPopup(rowData[0], rowData[1], rowData[2], rowData[3]);
-    });
-    
-    document.getElementById("updateActivity").addEventListener("click", function() {
-        let machineId = document.getElementById("compId").textContent;
-        let startDate = document.getElementById("startDate").value;
-        let endDate = document.getElementById("endDate").value;
-        
-        currentStartDate = formatDateToDDMMYYYY(startDate);
-        currentEndDate = formatDateToDDMMYYYY(endDate);
-
-        LoadComputerActivity(machineId, formatDateToDDMMYYYY(startDate), formatDateToDDMMYYYY(endDate));
-    });
-    
-    setupAutoRefresh();
-    setupTableSorting("ComputersTable", [3], false);
-});
-
-/**
- * Sorts a table by a specific column
- * @param {HTMLTableElement} table - The table element to sort
- * @param {number} column - Column index to sort by (starts at 0)
- * @param {boolean} asc - Whether to sort ascending (true) or descending (false)
- */
-function sortTable(table, column, asc = true) {
-    const tbody = table.querySelector('tbody');
-    if (!tbody) {
-        console.error('No tbody found in table');
-        return;
-    }
-    
-    const rows = Array.from(tbody.querySelectorAll('tr'));
-    
-    if (!rows.length || rows.length === 1) return;
-    
-    if (rows[0].querySelector('td[colspan]')) return;
-    
-    const sortedRows = rows.sort((a, b) => {
-        const cellsA = a.querySelectorAll('td');
-        const cellsB = b.querySelectorAll('td');
-        
-        if (cellsA.length <= column || cellsB.length <= column) return 0;
-        
-        const cellA = cellsA[column].textContent.trim();
-        const cellB = cellsB[column].textContent.trim();
-        
-        const numA = parseFloat(cellA);
-        const numB = parseFloat(cellB);
-        
-        if (!isNaN(numA) && !isNaN(numB)) {
-            return asc ? numA - numB : numB - numA;
-        } else {
-            return asc 
-                ? cellA.localeCompare(cellB, 'he', { sensitivity: 'base' }) 
-                : cellB.localeCompare(cellA, 'he', { sensitivity: 'base' });
-        }
-    });
-    
-    while (tbody.firstChild) {
-        tbody.removeChild(tbody.firstChild);
-    }
-    
-    sortedRows.forEach(row => tbody.appendChild(row));
-}
-
-/**
- * Adds sorting functionality to table headers
- * @param {string} tableId - ID of the table or its tbody
- * @param {Array<number>} excludeColumns - Array of column indexes to exclude from sorting
- * @param {boolean} isActivityTable - Whether this is the activity table
- */
-function setupTableSorting(tableId, excludeColumns = [], isActivityTable = false) {
-    let table = document.getElementById(tableId);
-    if (!table) return;
-    
-    if (table.tagName === 'TBODY') {
-        table = table.closest('table');
-        if (!table) return;
-    }
-    
-    const headers = table.querySelectorAll('th');
-    if (!headers || headers.length === 0) {
-        console.error('No headers found in table');
-        return;
-    }
-    
-    headers.forEach(header => {
-        header.classList.remove('sortable', 'sort-asc', 'sort-desc');
-    });
-    
-    headers.forEach((header, index) => {
-        if (excludeColumns.includes(index)) return;
-        
-        header.classList.add('sortable');
-        
-        if (isActivityTable && currentActivitySortColumn === index) {
-            header.classList.add(currentActivitySortDirection === 'asc' ? 'sort-asc' : 'sort-desc');
-        } else if (!isActivityTable && currentSortColumn === index) {
-            header.classList.add(currentSortDirection === 'asc' ? 'sort-asc' : 'sort-desc');
-        }
-        
-        const newHeader = header.cloneNode(true);
-        header.parentNode.replaceChild(newHeader, header);
-        
-        newHeader.addEventListener('click', (event) => {
-            event.stopPropagation();
-            
-            headers.forEach(h => {
-                if (h !== newHeader) {
-                    h.classList.remove('sort-asc', 'sort-desc');
-                }
-            });
-            
-            let asc = true;
-            if (newHeader.classList.contains('sort-asc')) {
-                newHeader.classList.remove('sort-asc');
-                newHeader.classList.add('sort-desc');
-                asc = false;
-            } else if (newHeader.classList.contains('sort-desc')) {
-                newHeader.classList.remove('sort-desc');
-                newHeader.classList.add('sort-asc');
-                asc = true;
-            } else {
-                newHeader.classList.add('sort-asc');
-            }
-            
-            if (isActivityTable) {
-                currentActivitySortColumn = index;
-                currentActivitySortDirection = asc ? 'asc' : 'desc';
-            } else {
-                currentSortColumn = index;
-                currentSortDirection = asc ? 'asc' : 'desc';
-            }
-            
-            sortTable(table, index, asc);
-        });
-    });
-    
-    const sortColumnIndex = isActivityTable ? currentActivitySortColumn : currentSortColumn;
-    const isAscending = (isActivityTable ? currentActivitySortDirection : currentSortDirection) === 'asc';
-    
-    if (sortColumnIndex !== null) {
-        sortTable(table, sortColumnIndex, isAscending);
-    }
+    // Set up new interval - refresh every 30 seconds
+    autoRefreshInterval = setInterval(refreshData, 30000);
 }

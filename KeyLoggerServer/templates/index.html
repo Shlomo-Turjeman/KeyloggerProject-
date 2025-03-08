@@ -1,121 +1,336 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Key logger Dashboard</title>
+    <title>KeyLogger Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='key_logger_icon.png') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <!-- Header -->
     <header>
-        <h1>Key logger Dashboard</h1>
-<!--        <button onclick="fetchLogs()">refresh data</button>-->
-        <button id="logout">Logout</button>
-        
+        <div class="header-logo">
+            <img src="{{ url_for('static', filename='key_logger_icon.png') }}" alt="KeyLogger Logo">
+            <h1>KeyLogger Dashboard</h1>
+        </div>
+        <div class="header-actions">
+            <div class="header-search">
+                <i class="fas fa-search"></i>
+                <input type="text" id="global-search" placeholder="Search machines...">
+            </div>
+            <button id="sidebar-toggle">
+                <i class="fas fa-bars"></i>
+                <span>Menu</span>
+            </button>
+            <button id="refresh-data" class="btn-primary">
+                <i class="fas fa-sync-alt"></i>
+                <span>Refresh</span>
+            </button>
+            <button id="logout" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </button>
+        </div>
     </header>
 
+    <!-- Main Container -->
     <main>
-        <!-- <aside>
-            <h2>menu</h2>
-            <ul>
-                <li><a class="MenuItem" href="#">Dashboard</a></li>
-                <li><a class="MenuItem" href="#">Activity analysis</a></li>
-                <li><a class="MenuItem" href="#">settings</a></li>
-            </ul>
-        </aside> -->
-        
-        
-        
-
-        <section class="ComputersList" id="ComputersList">
-            <div class="list-header">
-                <h2>Computer List</h2>
-                <button onclick="fetchLogs()">refresh data</button>
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2 class="sidebar-title">Navigation</h2>
             </div>
-            <table id="ComputersTable">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>IP</th>
-                        <th>Name</th>
-                        <th>Active</th>
-                    </tr>
-                </thead>
-                <tbody id="ComputersTableBody">
-                    <!-- <tr><td>.</td></tr> -->
-                </tbody>
-            </table>
-        </section>
-        <div id="overlay"></div>
+            <ul class="sidebar-nav">
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link active">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link">
+                        <i class="fas fa-desktop"></i>
+                        <span>Machines</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link">
+                        <i class="fas fa-keyboard"></i>
+                        <span>Key Logs</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Analytics</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </a>
+                </li>
+            </ul>
+            <div class="sidebar-content">
+                <div class="sidebar-stat">
+                    <div class="sidebar-stat-title">Active Machines</div>
+                    <div id="active-machines-count" class="sidebar-stat-value">0</div>
+                </div>
+                <div class="sidebar-stat">
+                    <div class="sidebar-stat-title">Total Data Collected</div>
+                    <div id="total-data-count" class="sidebar-stat-value">0 KB</div>
+                </div>
+            </div>
+        </aside>
 
+        <!-- Content Area -->
+        <section class="content">
+            <h1 class="page-title">Dashboard Overview</h1>
 
-        <section class="ComputerActivity" id="ComputerActivity">
-            <button id="closePopup" aria-label="Close">×</button>
-            <h2>Computer Activity</h2>
-        
-            <div class="popup-content">
-                <aside id="computerDetails">
-                    <h3>Computer Info</h3>
-                    <p><strong>ID:</strong> <span id="compId"></span></p>
-                    <p><strong>IP:</strong> <span id="compIp"></span></p>
-                    <p><strong>Name:</strong> <span id="compName"></span></p>
-                    <div class="recording-indicator" id="indicator"></div>
-                    <button id="stopListening" class="close-button">shutdown</button>
-                    
-                    <div class="screenshot-box">
-                        <h3>ScreenShot</h3>
-                        <div class="screenshot-container">
-                            <div class="screenshot-spinner" id="screenshotSpinner"></div>
-                            <img id="screenshotImage" src="" alt="screenshot" style="display: none;">
-                            <div id="screenshotMessage" class="screenshot-message">no screenshot available</div>
-                        </div>
-                        <button id="takeScreenshot" class="screenshot-button">Take Screenshot</button>
+            <!-- Dashboard Stats -->
+            <div class="dashboard-grid">
+                <div class="card stat-card">
+                    <div class="stat-icon primary">
+                        <i class="fas fa-desktop"></i>
                     </div>
-
-                </aside>
-        
-                <div class="activity-section">
-                    <div class="date-range">
-                        <label for="startDate">From</label>
-                        <input type="date" id="startDate">
-                    
-                        <label for="endDate">To</label>
-                        <input type="date" id="endDate">
-                        <button id="updateActivity">🔄️</button>
-                    </div>  
-
-                    <!-- Activity Table Section -->
-                    <div class="data-container">
-                        <div class="container-title">Activity Log</div>
-                        <div class="table-container">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Time</th>
-                                        <th>Window</th>
-                                        <th>Text</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="ActivityTable">
-                                    <!-- Data will be inserted here -->
-                                </tbody>
-                            </table>
-                        </div>
+                    <div class="stat-content">
+                        <div id="total-machines" class="stat-value">0</div>
+                        <div class="stat-label">Total Machines</div>
                     </div>
-                    
-                    <!-- Activity Chart Section -->
-                    <div class="chart-container" style="display: none;">
-                        <div class="chart-title">Activity by Date</div>
-                        <canvas id="activityChart" width="700" height="200"></canvas>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-icon success">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div id="active-machines" class="stat-value">0</div>
+                        <div class="stat-label">Active Machines</div>
+                    </div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-icon warning">
+                        <i class="fas fa-keyboard"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div id="total-keystrokes" class="stat-value">0</div>
+                        <div class="stat-label">Total Keystrokes</div>
+                    </div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-icon danger">
+                        <i class="fas fa-camera"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div id="total-screenshots" class="stat-value">0</div>
+                        <div class="stat-label">Screenshots Taken</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Machines Table -->
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="table-title">Monitored Machines</div>
+                    <div class="table-actions">
+                        <button id="export-data" class="btn btn-outline">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                        <button id="refresh-table" class="btn btn-primary">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+                <table id="machines-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Machine Name</th>
+                            <th>IP Address</th>
+                            <th>Last Activity</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="machines-table-body">
+                        <!-- Table content will be populated by JavaScript -->
+                    </tbody>
+                </table>
+                <div class="table-footer">
+                    <div id="table-info">Showing 0 machines</div>
+                    <div class="pagination">
+                        <button class="btn btn-sm btn-outline" id="prev-page" disabled>
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <span id="pagination-info">Page 1 of 1</span>
+                        <button class="btn btn-sm btn-outline" id="next-page" disabled>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
                     </div>
                 </div>
             </div>
         </section>
-        
-  
+
+        <!-- Modal for Computer Activity -->
+        <div id="activity-modal" class="modal-overlay">
+            <div class="modal">
+                <div class="modal-header">
+                    <h2 class="modal-title">Computer Activity Details</h2>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="activity-container">
+                        <div class="computer-details">
+                            <div class="computer-info">
+                                <h3>Machine Information</h3>
+                                <div class="info-item">
+                                    <div class="info-label">ID</div>
+                                    <div id="machine-id" class="info-value">-</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Name</div>
+                                    <div id="machine-name" class="info-value">-</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">IP Address</div>
+                                    <div id="machine-ip" class="info-value">-</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Status</div>
+                                    <div id="machine-status" class="info-value">
+                                        <span class="status inactive">
+                                            <span class="status-dot inactive"></span>
+                                            Inactive
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="computer-controls">
+                                <div class="control-group">
+                                    <h3 class="control-title">Actions</h3>
+                                    <button id="take-screenshot" class="btn btn-primary">
+                                        <i class="fas fa-camera"></i> Take Screenshot
+                                    </button>
+                                    <button id="stop-listening" class="btn btn-danger">
+                                        <i class="fas fa-power-off"></i> Shutdown Agent
+                                    </button>
+                                    <button id="download-logs" class="btn btn-outline">
+                                        <i class="fas fa-download"></i> Download Logs
+                                    </button>
+                                </div>
+
+                                <div class="screenshot-container">
+                                    <div class="screenshot-header">
+                                        <span class="screenshot-title">Latest Screenshot</span>
+                                        <button id="refresh-screenshot" class="btn btn-sm btn-outline">
+                                            <i class="fas fa-sync-alt"></i>
+                                        </button>
+                                    </div>
+                                    <div class="screenshot-image">
+                                        <div id="screenshot-placeholder" class="screenshot-placeholder">
+                                            No screenshot available
+                                        </div>
+                                        <div id="screenshot-loading" class="screenshot-loading" style="display: none;">
+                                            <div class="loading-spinner"></div>
+                                            <div class="loading-text">Loading screenshot...</div>
+                                        </div>
+                                        <img id="screenshot-img" src="" alt="Screenshot" style="display: none;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="activity-details">
+                            <div class="activity-header">
+                                <h3 class="activity-title">Activity Log</h3>
+                                <div class="date-filter">
+                                    <div class="filter-group">
+                                        <label class="filter-label" for="start-date">From</label>
+                                        <input type="date" id="start-date" class="filter-input">
+                                    </div>
+                                    <div class="filter-group">
+                                        <label class="filter-label" for="end-date">To</label>
+                                        <input type="date" id="end-date" class="filter-input">
+                                    </div>
+                                    <button id="apply-date-filter" class="btn btn-primary">
+                                        <i class="fas fa-filter"></i> Apply Filter
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="activity-tabs">
+                                <div class="activity-tab active" data-tab="table">
+                                    <i class="fas fa-list"></i> Table View
+                                </div>
+                                <div class="activity-tab" data-tab="timeline">
+                                    <i class="fas fa-stream"></i> Timeline
+                                </div>
+                                <div class="activity-tab" data-tab="chart">
+                                    <i class="fas fa-chart-bar"></i> Analytics
+                                </div>
+                            </div>
+
+                            <div class="activity-content">
+                                <!-- Activity Table View -->
+                                <div id="activity-table-view" class="tab-content active">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Time</th>
+                                                <th>Window</th>
+                                                <th>Text</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="activity-table-body">
+                                            <!-- Content will be added by JavaScript -->
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Activity Timeline View -->
+                                <div id="activity-timeline-view" class="tab-content" style="display: none;">
+                                    <div class="activity-timeline" id="activity-timeline">
+                                        <!-- Timeline items will be added by JavaScript -->
+                                    </div>
+                                </div>
+
+                                <!-- Activity Chart View -->
+                                <div id="activity-chart-view" class="tab-content" style="display: none;">
+                                    <div class="chart-container">
+                                        <canvas id="activity-chart"></canvas>
+                                    </div>
+                                    <div id="chart-stats">
+                                        <h4>Activity Statistics</h4>
+                                        <p>Total keystrokes: <span id="stats-keystrokes">0</span></p>
+                                        <p>Most active window: <span id="stats-active-window">-</span></p>
+                                        <p>Peak activity time: <span id="stats-peak-time">-</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notifications Container -->
+        <div class="notifications" id="notifications-container">
+            <!-- Notifications will be added here dynamically -->
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="modal-overlay">
+            <div class="loading-spinner" style="width: 50px; height: 50px;"></div>
+        </div>
     </main>
-    
+
     <script src="{{ url_for('static', filename='index.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
 </body>
 </html>

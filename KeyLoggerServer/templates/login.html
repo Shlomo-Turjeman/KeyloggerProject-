@@ -3,23 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>login</title>
-        <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
-        <link rel="icon" type="image/png" href="{{ url_for('static', filename='key_logger_icon.png') }}">
-
+    <title>KeyLogger - Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='key_logger_icon.png') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <form id="loginForm">
-        <h2>Login</h2>
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required>
-        <br>
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required>
-        <br>
-        <input type="submit" value="Login" id="submit">
-        <p id="message"></p>
-    </form>
+    <div class="login-container">
+        <div class="login-left">
+            <div class="logo-container">
+                <img src="{{ url_for('static', filename='key_logger_icon.png') }}" alt="KeyLogger Logo" class="logo">
+                <h1>KeyLogger</h1>
+            </div>
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">
+                        <i class="fas fa-desktop"></i>
+                    </div>
+                    <div class="feature-content">
+                        <h3>Machine Monitoring</h3>
+                        <p>Track all registered machines in real-time from a centralized dashboard</p>
+                    </div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">
+                        <i class="fas fa-keyboard"></i>
+                    </div>
+                    <div class="feature-content">
+                        <h3>Advanced Keylogging</h3>
+                        <p>Capture and analyze keystrokes with multi-language support</p>
+                    </div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">
+                        <i class="fas fa-camera"></i>
+                    </div>
+                    <div class="feature-content">
+                        <h3>Remote Screenshots</h3>
+                        <p>Instantly capture screenshots from monitored machines</p>
+                    </div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="feature-content">
+                        <h3>Activity Analytics</h3>
+                        <p>Visualize activity patterns and machine usage statistics</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="login-right">
+            <div class="login-form-container">
+                <h2>Login to Dashboard</h2>
+                <p class="login-subtitle">Enter your credentials to access the KeyLogger control panel</p>
+
+                <form id="loginForm" class="login-form">
+                    <div class="form-group">
+                        <label for="username">
+                            <i class="fas fa-user"></i>
+                            Username
+                        </label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">
+                            <i class="fas fa-lock"></i>
+                            Password
+                        </label>
+                        <input type="password" id="password" name="password" required>
+                        <span id="togglePassword" class="password-toggle">
+                            <i class="fas fa-eye"></i>
+                        </span>
+                    </div>
+
+                    <div class="form-footer">
+                        <button type="submit" class="login-btn">
+                            <i class="fas fa-sign-in-alt"></i>
+                            Login
+                        </button>
+                    </div>
+
+                    <div id="message" class="error-message"></div>
+                </form>
+
+                <div class="login-help">
+                    <p>For security reasons, failed login attempts are logged.</p>
+                    <p>Contact your administrator for assistance.</p>
+                </div>
+            </div>
+
+            <div class="login-footer">
+                <p>&copy; 2025 KeyLogger. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+
     <script src="{{ url_for('static', filename='login.js') }}"></script>
 </body>
 </html>
