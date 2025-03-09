@@ -1031,4 +1031,5 @@ function setupTableSorting(tableId, excludeColumns = [], isActivityTable = false
     if (sortColumnIndex !== null) {
         sortTable(table, sortColumnIndex, isAscending);
     }
+
 }
